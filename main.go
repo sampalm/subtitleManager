@@ -1,16 +1,32 @@
 package main
 
 import (
-	"time"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func main() {
 	var subname, subpath string
+	var subFiles = []string{}
+
+	// SHOW info about SubtitlesFilter
+	fmt.Println("+--------------------------------------------------------------------------+")
+	fmt.Println("|█▀▀ █░░█ █▀▀▄ ▀▀█▀▀ ░▀░ ▀▀█▀▀ █░░ █▀▀ █▀▀   █▀▀ ░▀░ █░░ ▀▀█▀▀ █▀▀ █▀▀█ █▀▀|")
+	fmt.Println("|▀▀█ █░░█ █▀▀▄ ░░█░░ ▀█▀ ░░█░░ █░░ █▀▀ ▀▀█   █▀▀ ▀█▀ █░░ ░░█░░ █▀▀ █▄▄▀ ▀▀█|")
+	fmt.Println("|▀▀▀ ░▀▀▀ ▀▀▀░ ░░▀░░ ▀▀▀ ░░▀░░ ▀▀▀ ▀▀▀ ▀▀▀   ▀░░ ▀▀▀ ▀▀▀ ░░▀░░ ▀▀▀ ▀░▀▀ ▀▀▀|")
+	fmt.Println("+--------------------------------------------------------------------------+")
+	fmt.Println(`ABOUT: SubtitlesFilter can make your life more easier by selecting only the subtitles
+	you need to watch your movies, series or whatever you want.
+	************** HOW TO USE **************
+	Put the address where your subtitles are and after that just enter the version of the subtitle
+	you want, after the program finish the task your subtitles will be in the backup folder that 
+	will be created automatically. Enjoy ;) 
+	`)
+	
 
 	// GET Subtitles path
 	fmt.Print("Enter the subtitle path[Ex: ./subtitles/]: ")
@@ -20,15 +36,28 @@ func main() {
 	fmt.Print("Enter the subtitle version[Ex: HDTV.x264]: ")
 	fmt.Scan(&subname)
 
+	// SEARCH files in the address
 	if subpath != "" && subname != "" {
-		search(subpath, subname)
+		subFiles = search(subpath, subname)
 	} else {
 		fmt.Println("Invalid subtitle path or name.")
 		time.Sleep(time.Duration(3 * time.Second))
 	}
+
+	// FILTER the files in the address
+	// DELETE the files that dont match
+	if filter(subpath, subFiles); deleteFiles(subpath) {
+		// Finish program
+		fmt.Println("+-------------------------------------------------+")
+		fmt.Println("|**** TASK COMPLETED ")
+		fmt.Println("|**** YOUR SUBTITLES ARE IN THE BACKUP FOLDER")
+		fmt.Println("|**** " + subpath + "backup/ ")
+		fmt.Println("+-------------------------------------------------+")
+		time.Sleep(time.Duration(5 * time.Second))
+	}
 }
 
-func search(path, sub string) {
+func search(path, sub string) []string {
 	var subFiles = []string{}
 
 	files, err := filepath.Glob(path + "*" + sub + "*.srt")
@@ -43,15 +72,16 @@ func search(path, sub string) {
 	}
 
 	if subFiles != nil && len(subFiles) > 0 {
-		filter(path, subFiles)
+		return subFiles
 	} else {
 		log.Println("None files match with these description.")
 		time.Sleep(time.Duration(5 * time.Second))
 		os.Exit(1)
 	}
+	return nil
 }
 
-func filter(path string, files []string) {
+func filter(path string, files []string) bool {
 	var subs string
 	var bkp = path + "backup/"
 
@@ -72,11 +102,11 @@ func filter(path string, files []string) {
 		}
 	}
 
-	// Delete all other files
-	deleteFiles(path)
+	return true
+
 }
 
-func deleteFiles(path string) {
+func deleteFiles(path string) bool {
 	files, err := filepath.Glob(path + "*.srt")
 	if err != nil {
 		log.Println(err)
@@ -93,11 +123,6 @@ func deleteFiles(path string) {
 		}
 	}
 
-	// Finish program
-	fmt.Println("+-------------------------------------------------+")
-	fmt.Println("|**************** TASK COMPLETED *****************|")
-	fmt.Println("|**** YOUR SUBTITLES ARE IN THE BACKUP FOLDER ****|")
-	fmt.Println("|********* "+path+"backup/ ********|")
-	fmt.Println("+-------------------------------------------------+")
-	time.Sleep(time.Duration(5 * time.Second))
+	return true
+
 }
