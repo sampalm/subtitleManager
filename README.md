@@ -1,4 +1,4 @@
-Subtitle Filter
+Subtitles Filter
 ===
 
 SubtitlesFilter can make your life more easier by selecting only the subtitles you need to watch your movies, series or whatever you want.
