@@ -17,3 +17,8 @@ Or you also can download the executable version **[Outdated]**.
 ## How to use
 
 To use the application you must use flags to define directories and different functions of the application. For more information Use ```-h``` tag to see a detailed set of instructions explaining the main functions of the application.
+
+###### Main flags
+* ```-p``` Sets the main subtitle directory.
+* ```-e``` Sets the file extension, usually ".srt".
+* ```-v``` Sets the subtitle version, like "iNTERNAL.480p.x264".
