@@ -40,8 +40,14 @@ func init() {
 	p := flag.String("p", "", "Set the root path.")
 	e := flag.String("e", ".srt", "Set the extension of the file.")
 	v := flag.String("v", "", "Set the version of the subtitle.")
+	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
 	flag.Parse()
 	flags = []string{*p, *e, *v}
+	if *h == true {
+		PrintInfo()
+		PrintHelp()
+		os.Exit(1)
+	}
 }
 
 func main() {
@@ -58,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 	// Copy files to temp folder
-	dst = os.TempDir() + "\\subfilter\\"
+	dst = filepath.Join(os.TempDir(), "/subfilter")
 	copyall(sf, dst)
 
 	// Delete all files from source folder
@@ -124,7 +130,7 @@ func copyall(files []File, dst string) {
 func copy(file File, dst string) {
 	defer wg.Done()
 	start := time.Now()
-	dsti := fmt.Sprintf("%s\\%s", dst, file.Name)
+	dsti := filepath.Join(dst, "/", file.Name)
 	// First verify if file already exists inside dst folder
 	dstfile, err := os.OpenFile(dsti, syscall.O_CREAT|syscall.O_EXCL, 0666)
 	if err != nil {
