@@ -12,13 +12,13 @@ func PrintInfo() {
 // PrintHelp print out basic instructions of how to use subtitle manager.
 func PrintHelp() {
 	fmt.Printf(`
-Flags: -p="Define o caminho a ser executado a busca" -e="Define a extensão do arquivo" -v="Define a versão do arquivo"
+Flags: -p="Se the main path of the files" -e="Set the extension" -v="Set the version"
 === HOW TO USE ===
-* Execute o programa com a flag [-p] para definir o local de execução. eg: "./subs/" (Obrigatorio)
-* Você pode definir a extensão do arquivo a ser exportado. eg: ".sub" (Opcional)
-* Você pode definir a versão do arquivo. eg: "720p-WEB". (Opcional)
-* Você pode definiar a pasta para onde os arquivos serão movidos. eg: "./meus-subs/" (Opcional)
+* Execute the program with "-p" flag to set the path that contains the subtitles. eg: "./subs/" (Required)
+* You can set the file extension. eg: ".sub" (Optional)
+* You also can set the subtitle version. eg: "720p-WEB". (Optional)
+* You can set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
 	
-Caso ocorra algum problema, ou tenha alguma sugestão por favor me envie um email: samuelpalmeira@outlook.com
+If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
 	`)
 }
