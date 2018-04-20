@@ -1,17 +1,19 @@
-Subtitles Filter
-===
+# Subtitle Manager
 
-SubtitlesFilter can make your life more easier by selecting only the subtitles you need to watch your movies, series or whatever you want.
+Subtitle Manager is an application to manage movie captions, series, anime, etc more efficiently. You can also download the captions directly to the application and organize them by categories.
+
+The application is still in the testing phase and also does not have all the functions. This is a project for learning purposes only, I don't have the goal of turning it into something beyond that.
+
+I appreciate any suggestions or tips to improve application performance or improve the code itself.
 
 ## Setup
 If you want to change something in the code you can use: 
 ```
-go get -u github.com/Inginex/subtitlesFilter
+go get -u github.com/sampalm/subtitleManager.
 ```
 
-Or you also can download the executable version.
+Or you also can download the executable version **[Outdated]**.
 
 ## How to use
 
-Put the address where your subtitles are and after that just enter the version of the subtitle you want, after the program finish the task your subtitles will be in the backup folder that will be created automatically. Enjoy ;) 
-*OBS: This program will delete all subtitles that are in the "path" and do not match with your "version", so be aware of that.
+To use the application you must use flags to define directories and different functions of the application. For more information Use ```-h``` tag to see a detailed set of instructions explaining the main functions of the application.
