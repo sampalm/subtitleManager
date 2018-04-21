@@ -16,9 +16,28 @@ Or you also can download the executable version **[Outdated]**.
 
 ## How to use
 
-To use the application you must use flags to define directories and different functions of the application. For more information Use ```-h``` tag to see a detailed set of instructions explaining the main functions of the application.
+To use the application you must use flags to define directories and different functions of the application. For more information Use `-h` tag to see a detailed set of instructions explaining the main functions of the application.
 
-###### Main flags
-* ```-p``` Sets the main subtitle directory.
-* ```-e``` Sets the file extension, usually ".srt".
-* ```-v``` Sets the subtitle version, like "iNTERNAL.480p.x264".
+### Flags: 
+* p "Set main path of the files" 
+* e "Set extension" 
+* v "Set version" 
+* m "Set path to move files"
+
+### Usage:
+`subtitlemanager [flags]`
+
+### Flags info:
+* **-p**	
+    * Execute the program with "-p" flag to set the main path that contains the subtitles. eg: "./subs/" *(Required)*
+* **-e**	
+    * Use it to set the file extension. eg: ".sub" *(Optional)*
+* **-v**	
+    * Use it to set the subtitle version. eg: "720p-WEB". *(Optional)*
+* **-m**	
+    * Use it to set the folder to where the files will be moved. eg: "./my-subs/". *(Optional)*
+	    * If you set this flag no files will be deleted, only the files that matched will be moved. 
+	
+### Additional:
+If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
+	
