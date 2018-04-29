@@ -23,6 +23,7 @@ To use the application you must use flags to define directories and different fu
 * e "Set extension" 
 * v "Set version" 
 * m "Set path to move files"
+* only "Runs search only into the main path"
 
 ### Usage:
 `subtitlemanager [flags]`
@@ -37,6 +38,8 @@ To use the application you must use flags to define directories and different fu
 * **-m**	
     * Use it to set the folder to where the files will be moved. eg: "./my-subs/". *(Optional)*
 	    * If you set this flag no files will be deleted, only the files that matched will be moved. 
+* **-only**	
+    * Execute search only into the main path, it will ignore all subfolders and files within. (Optional)
 	
 ### Additional:
 If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
