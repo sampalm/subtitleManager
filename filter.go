@@ -1,4 +1,5 @@
-// TODO: Implement a new function that organize files by folders that have the name of the serie or movie
+// TODO: Implement a new function that organize files by folders that have the name of the serie or movie.
+// TODO: Only delete file if any file is copied or -d flag has been used.
 
 package main
 
@@ -37,7 +38,7 @@ type Log struct {
 	Err  error
 }
 
-var options = make([]string, 4)
+var options = make([]bool, 2)
 var flags = make([]string, 3)
 var wg sync.WaitGroup
 var mtx sync.Mutex
@@ -46,21 +47,30 @@ var errFound bool
 var logs []Log
 
 const (
+	// flags
 	path    = 0
 	ext     = 1
 	version = 2
 	move    = 3
+
+	// options
+	help = 0
+	only = 1
 )
 
 func init() {
 	p := flag.String("p", "", "Set the root path.")
 	e := flag.String("e", ".srt", "Set the extension of the file.")
 	v := flag.String("v", "", "Set the version of the subtitle.")
-	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
 	m := flag.String("m", "", "Only move files to this selected directory.")
+
+	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
+	o := flag.Bool("only", false, "Runs search only into the main path.")
+
 	flag.Parse()
 	flags = []string{*p, *e, *v, *m}
-	if *h {
+	options = []bool{*h, *o}
+	if options[help] {
 		PrintInfo()
 		PrintHelp()
 		os.Exit(1)
@@ -100,24 +110,31 @@ func main() {
 }
 
 func getall() (files []File, err error) {
-
 	err = filepath.Walk(flags[path], func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(path) == flags[ext] {
-			if flags[version] != "" {
-				if match, _ := regexp.MatchString("([a-zA-Z0-9]+)."+flags[version], path); !match {
-					return nil
-				}
-			}
-
-			file := File{
-				Path:   path,
-				Name:   info.Name(),
-				Ext:    filepath.Ext(path),
-				Size:   info.Size(),
-				Folder: filepath.Dir(path),
-			}
-			files = append(files, file)
+		if filepath.Ext(path) != flags[ext] {
+			return nil
 		}
+		if options[only] {
+			onlypath := filepath.Join(flags[0], info.Name())
+			if onlypath != path {
+				return nil
+			}
+		}
+		if flags[version] != "" {
+			if match, _ := regexp.MatchString("([a-zA-Z0-9]+)."+flags[version], path); !match {
+				return nil
+			}
+		}
+
+		file := File{
+			Path:   path,
+			Name:   info.Name(),
+			Ext:    filepath.Ext(path),
+			Size:   info.Size(),
+			Folder: filepath.Dir(path),
+		}
+		files = append(files, file)
+
 		return nil
 	})
 	if err != nil {
@@ -175,16 +192,23 @@ func copy(file File, subs *[]Sub) {
 
 func deleteall(dst string, ext string) {
 	if err := filepath.Walk(dst, func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(path) == ext {
-			if err := os.Remove(path); err != nil {
-				fmt.Fprintf(os.Stdout, "deleteAllFiles: could not detele file: %s, Error: %v\n", path, err)
-				log := Log{
-					Func: "deleteAll",
-					Err:  err,
-				}
-				logs = append(logs, log)
-				errFound = true
+		if filepath.Ext(path) != ext {
+			return nil
+		}
+		if options[only] {
+			onlypath := filepath.Join(flags[0], info.Name())
+			if onlypath != path {
+				return nil
 			}
+		}
+		if err := os.Remove(path); err != nil {
+			fmt.Fprintf(os.Stdout, "deleteAllFiles: could not detele file: %s, Error: %v\n", path, err)
+			log := Log{
+				Func: "deleteAll",
+				Err:  err,
+			}
+			logs = append(logs, log)
+			errFound = true
 		}
 		fmt.Fprintf(os.Stdout, "deleteAllFiles: file deleted without any errors: %s\n", info.Name())
 		return nil
