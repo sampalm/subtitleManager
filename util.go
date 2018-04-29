@@ -18,18 +18,17 @@ func PrintInfo() {
 // PrintHelp print out basic instructions of how to use subtitle manager.
 func PrintHelp() {
 	fmt.Fprintf(os.Stdout, `
-Flags: 
-	-p="Set the main path of the files" -e="Set the extension" -v="Set the version" -m="Set the path to move files"
-
+	
 Usage:
 	subtitlemanager [flags]
 
 Flags info:
-	p	Execute the program with "-p" flag to set the path that contains the subtitles. eg: "./subs/" (Required)
-	e	You can set the file extension. eg: ".sub" (Optional)
-	v	You also can set the subtitle version. eg: "720p-WEB". (Optional)
-	m	You can set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
-		If you set this flag no files will be deleted, only the files that matched will be moved.
+	p		Execute the program with "-p" flag to set the path that contains the subtitles. eg: "./subs/" (Required)
+	e		You can set the file extension. eg: ".sub" (Optional)
+	v		You also can set the subtitle version. eg: "720p-WEB". (Optional)
+	m		You can set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
+			If you set this flag no files will be deleted, only the files that matched will be moved.
+	only	Execute the search only into the main path, it will ignore all subfolders and files within. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
@@ -40,7 +39,7 @@ Additional:
 func CreateLogFile(logs []Log) error {
 	time := time.Now().Format("01/_2/2006 - 15:04:05")
 	file := filepath.Join("./log.txt")
-	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0777)
+	f, err := os.OpenFile(file, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, 0777)
 	if err != nil {
 		return err
 	}
