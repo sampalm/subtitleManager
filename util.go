@@ -52,3 +52,44 @@ func CreateLogFile(logs []Log) error {
 	return nil
 
 }
+
+// ConfirmAction fulfill a menssage and print it out to user confirm a task action and return a boolean, if users input is anything then 'y' this function will return a false boolean otherwise it will be true.
+func ConfirmAction(message string) bool {
+	var confirm string
+	fmt.Fprintf(os.Stdout, "%s. Anything besides 'y' will cancel this task Confirm?(y/N): ", message)
+	fmt.Scan(&confirm)
+	if confirm == "y" {
+		return true
+	}
+	return false
+}
+
+// CheckErr check if exits an error and print it out with the function that called CheckErr. This function will forces the program to close with os.Exit function.
+func CheckErr(caller string, gravity int, err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "%s: %s\n", caller, err.Error())
+		switch gravity {
+		case 0:
+			break
+		case 1:
+			os.Exit(1)
+			break
+		case 2:
+			panic("_BAD_FUNCTION")
+		}
+
+	}
+}
+
+// CloseFilter will close the program and report if any error occurred in its execution.
+func CloseFilter() {
+	if errFound {
+		fmt.Fprintln(os.Stdout, "*** TASK COMPLETED with some errors. Open log file to see all program execution errors ***")
+		if err := CreateLogFile(logs); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		return
+	}
+	fmt.Fprintln(os.Stdout, "*** TASK COMPLETED without any errors. ***")
+}
