@@ -74,7 +74,7 @@ func main() {
 			log.Println("Task canceled.")
 			os.Exit(1)
 		}
-		fg.Deleteall()
+		fg.Deleteall(nil)
 		break
 	case fg.Get[path] != "":
 		if fg.Get[version] == "" {
@@ -89,7 +89,7 @@ func main() {
 		subs, err := fg.Getall()
 		CheckErr("path GetAll", 1, err)
 		// delete files
-		fg.Deleteall()
+		fg.Deleteall(subs)
 		// copy files
 		for _, sub := range subs {
 			wg.Add(1)
