@@ -1,5 +1,4 @@
 // TODO: Implement a new function that organize files by folders that have the name of the serie or movie.
-// TODO: Only delete file if any file is copied or -d flag has been used.
 
 package main
 
@@ -88,7 +87,11 @@ func buffering(name, path string) (sub Sub) {
 	return
 }
 
-func (fg Flag) Deleteall() {
+func (fg Flag) Deleteall(subs []Sub) {
+	fmt.Println("SUBS LENGTH: ", len(subs), "DELETE STATE: ", fg.Options[del])
+	if len(subs) == 0 && !fg.Options[del] {
+		return // None file was copy neither flag -d was set
+	}
 	if err := filepath.Walk(fg.Get[path], func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path) != fg.Get[ext] {
 			return nil
@@ -99,7 +102,7 @@ func (fg Flag) Deleteall() {
 				return nil
 			}
 		}
-		if fg.Get[version] != "" {
+		if fg.Get[version] != "" && fg.Options[del] {
 			if match, _ := regexp.MatchString("([a-zA-Z0-9]+)."+fg.Get[version], path); !match {
 				return nil
 			}
