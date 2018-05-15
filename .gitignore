@@ -24,6 +24,7 @@ _testmain.go
 *.test
 *.prof
 *.rar
+*.zip
 
 # WebStorm
 *.iml
@@ -48,6 +49,7 @@ builds/**/images/*
 *.mp4
 *.png
 *.jpeg
+log.txt
 
 # security / ssl
 *.pem
