@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -27,6 +28,14 @@ type Sub struct {
 	Name string
 	Path string
 	Body *bytes.Buffer
+	Media
+}
+
+type Media struct {
+	Title    string
+	Season   string
+	Size     int64
+	Language string
 }
 
 // Log used to save errors log
@@ -79,10 +88,14 @@ func buffering(name, path string) (sub Sub) {
 		fmt.Fprintf(os.Stdout, "copyAllFiles: cannot copy file %s err: %s", name, err.Error())
 		return
 	}
+	st, _ := fl.Stat()
 	sub = Sub{
 		Name: name,
 		Path: path,
 		Body: b,
+		Media: Media{
+			Size: st.Size(),
+		},
 	}
 	return
 }
@@ -159,7 +172,7 @@ func delete(path string) {
 func create(sub Sub, path string) {
 	defer wg.Done()
 	file := filepath.Join(path, sub.Name)
-	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0777)
+	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, Error: %v\n", file, err)
 		errFound = true
@@ -182,5 +195,78 @@ func create(sub Sub, path string) {
 		logs = append(logs, log)
 		return
 	}
-	fmt.Fprintf(os.Stdout, "createFile: file created: %s\n", file)
+}
+
+func (fg Flag) OrganizeAll(subs []Sub) {
+	var ch = make(chan Sub)
+	var cn = make(chan string)
+	if fg.Options[del] {
+		fg.Options[only] = true
+		fg.Deleteall(subs)
+	}
+	for _, sub := range subs {
+		go getParams(sub, ch)
+	}
+	for c := 0; c < len(subs); {
+		select {
+		case cs := <-ch:
+			go organize(cs, cn)
+		case <-cn:
+			c++
+		}
+	}
+}
+
+func organize(sub Sub, cn chan string) {
+	defer func() {
+		// Notify that this function is done
+		cn <- "done"
+	}()
+	newPath := filepath.Join(fg.Get[path], sub.Title, sub.Season)
+	if fg.Get[move] != "" {
+		newPath = filepath.Join(fg.Get[move], sub.Title, sub.Season)
+	}
+	// Create new folder to sub
+	if err := os.MkdirAll(newPath, 0642); err != nil {
+		fmt.Fprintf(os.Stdout, "organize: could not create directory: %s, Error: %v\n", fg.Get[move], err)
+		os.Exit(3)
+	}
+	fmt.Fprintf(os.Stdout, "organize: directory created: %s\n", newPath)
+	// Copy sub to new folder
+	file := filepath.Join(newPath, sub.Name)
+	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "organize: could not create file: %s, Error: %v\n", file, err)
+		errFound = true
+		log := Log{
+			Func: "organize",
+			Err:  err,
+		}
+		logs = append(logs, log)
+		return
+	}
+	defer f.Close()
+	if _, err := f.Write(sub.Body.Bytes()); err != nil {
+		fmt.Fprintf(os.Stdout, "organize: could not save file: %s, Error: %v\n", file, err)
+		errFound = true
+		log := Log{
+			Func: "organize",
+			Err:  err,
+		}
+		logs = append(logs, log)
+		return
+	}
+}
+
+func getParams(sub Sub, ch chan Sub) {
+	rawS := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").FindString(sub.Name)
+	rawN := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").Split(sub.Name, -1)[0]
+	sub.Title = strings.TrimSpace(strings.Replace(rawN, ".", " ", -1))
+	if rawN != "" {
+		sub.Season = strings.TrimSpace(regexp.MustCompile("([a-zA-Z]([0-9])+)").FindString(rawS))
+	}
+	if rawS == "" {
+		sub.Title = strings.TrimSpace(strings.Replace(strings.Split(sub.Name, fg.Get[ext])[0], ".", " ", -1))
+	}
+	ch <- sub
 }
