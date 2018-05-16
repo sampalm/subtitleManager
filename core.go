@@ -13,17 +13,20 @@ type Flag struct {
 
 var fg Flag
 
+// flags
 const (
-	// flags
-	path    = 0
-	ext     = 1
-	version = 2
-	move    = 3
+	path = iota
+	ext
+	version
+	move
+)
 
-	// options
-	del  = 0
-	help = 1
-	only = 2
+// options
+const (
+	del = iota
+	help
+	only
+	org
 )
 
 func init() {
@@ -35,10 +38,11 @@ func init() {
 	d := flag.Bool("d", false, "Only delete files in selected directory.")
 	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
 	o := flag.Bool("only", false, "Runs search only into the main path.")
+	org := flag.Bool("o", false, "Organize all files in selected directy.")
 
 	flag.Parse()
 	fg.Get = []string{*p, *e, *v, *m}
-	fg.Options = []bool{*d, *h, *o}
+	fg.Options = []bool{*d, *h, *o, *org}
 }
 
 func main() {
@@ -49,6 +53,15 @@ func main() {
 		break
 	case fg.Get[path] == "":
 		log.Println("Path must be defined.")
+		break
+	case fg.Options[org]:
+		if !ConfirmAction("This task will move all files that will be found") {
+			log.Println("Task canceled.")
+			os.Exit(1)
+		}
+		subs, err := fg.Getall()
+		CheckErr("path GetAll", 1, err)
+		fg.OrganizeAll(subs)
 		break
 	case fg.Get[move] != "":
 		if fg.Get[version] != "" {
