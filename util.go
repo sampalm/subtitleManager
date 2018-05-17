@@ -20,15 +20,19 @@ func PrintHelp() {
 	fmt.Fprintf(os.Stdout, `
 	
 Usage:
-	subtitlemanager [flags]
+	subtitlemanager [flags] [options...]
 
-Flags info:
-	p		Execute the program with "-p" flag to set the path that contains the subtitles. eg: "./subs/" (Required)
-	e		You can set the file extension. eg: ".sub" (Optional)
-	v		You also can set the subtitle version. eg: "720p-WEB". (Optional)
-	m		You can set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
-			If you set this flag no files will be deleted, only the files that matched will be moved.
-	only	Execute the search only into the main path, it will ignore all subfolders and files within. (Optional)
+Flags:
+	p		Set the main path. eg: "./subs/" (Required)
+	e		Set the file extension. eg: ".sub" (Optional)
+	v		Set the subtitle version. eg: "720p-WEB". (Required)
+	m		Set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
+
+Options:
+	org		Organize all files in selected directy. (Optional)
+	d		Delete files in selected directory and sub-directories. (Optional)
+	h		Returns basic instructions to use Subtitle Manager. (Optional)
+	only	Restrict all set options to be executed only in the main path. It will ignore all sub-directories. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
