@@ -137,6 +137,7 @@ func (fg Flag) Deleteall(subs []Sub) {
 }
 
 func (fg Flag) Moveall(subs []Sub) {
+	cDone := make(chan bool)
 	// Create or check if the output dst exists
 	if _, err := os.Stat(fg.Get[move]); os.IsNotExist(err) {
 		if err := os.MkdirAll(fg.Get[move], 0642); err != nil {
@@ -148,15 +149,17 @@ func (fg Flag) Moveall(subs []Sub) {
 
 	// Delete and move files
 	for _, sub := range subs {
-		wg.Add(2)
 		go delete(sub.Path)
-		go create(sub, fg.Get[move])
+		go create(sub.Name, sub.Body.Bytes(), fg.Get[move])
+		cDone <- true
 	}
-	wg.Wait()
+	// Wait every gorountine finish
+	for range subs {
+		<-cDone
+	}
 }
 
 func delete(path string) {
-	defer wg.Done()
 	if err := os.RemoveAll(path); err != nil {
 		fmt.Fprintf(os.Stdout, "deteleFile: could not delete file: %s, Error: %v\n", path, err)
 		errFound = true
@@ -169,9 +172,8 @@ func delete(path string) {
 	}
 }
 
-func create(sub Sub, path string) {
-	defer wg.Done()
-	file := filepath.Join(path, sub.Name)
+func create(name string, body []byte, path string) {
+	file := filepath.Join(path, name)
 	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, Error: %v\n", file, err)
@@ -185,7 +187,7 @@ func create(sub Sub, path string) {
 	}
 	defer f.Close()
 
-	if _, err := f.Write(sub.Body.Bytes()); err != nil {
+	if _, err := f.Write(body); err != nil {
 		fmt.Fprintf(os.Stdout, "createFile: could not save file: %s, Error: %v\n", file, err)
 		errFound = true
 		log := Log{
@@ -269,4 +271,34 @@ func getParams(sub Sub, ch chan Sub) {
 		sub.Title = strings.TrimSpace(strings.Replace(strings.Split(sub.Name, fg.Get[ext])[0], ".", " ", -1))
 	}
 	ch <- sub
+}
+
+func (fg Flag) FetchAll() (files []*os.File, err error) {
+	var bucket []*os.File
+	if err := filepath.Walk(fg.Get[path], func(path string, info os.FileInfo, err error) error {
+		// Accepted files type .avi, .mp4, .mkv,
+		ext := filepath.Ext(path)
+		if ext != ".avi" && ext != ".mp4" && ext != ".mkv" {
+			return nil
+		}
+		if fg.Options[only] {
+			onlypath := filepath.Join(fg.Get[0], info.Name())
+			if onlypath != path {
+				return nil
+			}
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("fetchAll: openfile: cannot open file %s err: %s", file.Name(), err.Error())
+		}
+		bucket = append(bucket, file)
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("fetchAll: filepath: %s", err.Error())
+	}
+	if len(bucket) == 0 {
+		return nil, fmt.Errorf("fetchAll: bucket: none file found")
+	}
+
+	return bucket, nil
 }
