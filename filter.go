@@ -101,7 +101,6 @@ func buffering(name, path string) (sub Sub) {
 }
 
 func (fg Flag) Deleteall(subs []Sub) {
-	fmt.Println("SUBS LENGTH: ", len(subs), "DELETE STATE: ", fg.Options[del])
 	if len(subs) == 0 && !fg.Options[del] {
 		return // None file was copy neither flag -d was set
 	}
@@ -208,7 +207,6 @@ func (fg Flag) OrganizeAll(subs []Sub) {
 	var ch = make(chan Sub)
 	var cn = make(chan string)
 	if fg.Options[del] {
-		fg.Options[only] = true
 		fg.Deleteall(subs)
 	}
 	for _, sub := range subs {
@@ -310,8 +308,8 @@ func (fg Flag) FetchAll() (files []*os.File, err error) {
 
 func getLangs() []string {
 	langs := fg.Get[mlang]
-	if langs == "" {
-		return nil
+	if langs != "" {
+		return strings.Split(strings.TrimSpace(langs), ",")
 	}
-	return strings.Split(strings.TrimSpace(langs), ",")
+	return nil
 }
