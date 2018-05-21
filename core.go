@@ -48,7 +48,7 @@ func init() {
 	d := flag.Bool("d", false, "Only delete files in selected directory.")
 	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
 	o := flag.Bool("only", false, "Runs search only into the main path.")
-	org := flag.Bool("o", false, "Organize all files in selected directy.")
+	org := flag.Bool("org", false, "Organize all files in selected directy.")
 
 	flag.Parse()
 	fg.Get = []string{*p, *e, *v, *m, *lang}
