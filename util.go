@@ -27,12 +27,14 @@ Flags:
 	e		Set the file extension. eg: ".sub" (Optional)
 	v		Set the subtitle version. eg: "720p-WEB". (Required)
 	m		Set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
+	lang	Set the language for download subtitles. Default language: "eng". (Optional)
 
 Options:
 	org		Organize all files in selected directy. (Optional)
 	d		Delete files in selected directory and sub-directories. (Optional)
 	h		Returns basic instructions to use Subtitle Manager. (Optional)
 	only	Restrict all set options to be executed only in the main path. It will ignore all sub-directories. (Optional)
+	dl		Download subtitles to all files inside main path. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
