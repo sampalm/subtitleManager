@@ -106,7 +106,11 @@ func main() {
 				}
 				// Filter subtitles
 				langs := getLangs()
-				subs = osb.FilterSubtitles(subs, langs)
+				subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
+				if len(subs) == 0 {
+					log.Println("None subtitles found.")
+					os.Exit(1)
+				}
 				// Confirm Download
 				if !ConfirmAction("Do you want to download these subtitles") {
 					log.Println("Task canceled.")
