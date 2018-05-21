@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type Subtitle struct {
@@ -119,19 +120,36 @@ func readChunk(file *os.File, offset int64, buf []byte) (err error) {
 	return
 }
 
-func FilterSubtitles(subs []Subtitle, langs []string) []Subtitle {
+func FilterSubtitles(subs []Subtitle, langs []string, rate int) []Subtitle {
 	// Filter subtitles
 	subs = func(subs []Subtitle) []Subtitle {
-		var newSubs []Subtitle
-		for _, sub := range subs {
-			if langs != nil {
+		var newSubs = subs
+		// Filter langs
+		if langs != nil {
+			var langSubs []Subtitle
+			for _, sub := range subs {
 				for _, lang := range langs {
 					if sub.LanguageID == lang {
-						newSubs = append(newSubs, sub)
+						langSubs = append(langSubs, sub)
 						break
 					}
 				}
 			}
+			newSubs = langSubs
+		}
+		// Filter rating
+		if rate != 0 {
+			var rateSubs []Subtitle
+			if langs == nil {
+				newSubs = subs
+			}
+			for in := 0; in < len(newSubs); in++ {
+				subRating, _ := strconv.ParseFloat(newSubs[in].Rating, 64)
+				if int(subRating) >= rate {
+					rateSubs = append(rateSubs, newSubs[in])
+				}
+			}
+			newSubs = rateSubs
 		}
 		return newSubs
 	}(subs)
