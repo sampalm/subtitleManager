@@ -173,7 +173,12 @@ func delete(path string) {
 }
 
 func create(name string, body []byte, path string) {
-	file := filepath.Join(path, name)
+	fp := filepath.Join(path, "downloads")
+	if err := os.MkdirAll(fp, 0642); err != nil {
+		fmt.Fprintf(os.Stdout, "createFile: could not create directory: %s, Error: %v\n", fp, err)
+		return
+	}
+	file := filepath.Join(fp, name)
 	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, Error: %v\n", file, err)
