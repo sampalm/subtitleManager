@@ -307,3 +307,11 @@ func (fg Flag) FetchAll() (files []*os.File, err error) {
 
 	return bucket, nil
 }
+
+func getLangs() []string {
+	langs := fg.Get[mlang]
+	if langs == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimSpace(langs), ",")
+}
