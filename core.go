@@ -12,6 +12,7 @@ import (
 type Flag struct {
 	Get     []string
 	Options []bool
+	Const   []int
 }
 
 var fg Flag
@@ -23,6 +24,7 @@ const (
 	version
 	move
 	lang
+	mlang
 )
 
 // options
@@ -34,10 +36,17 @@ const (
 	dl
 )
 
+// const
+const (
+	rate = iota
+)
+
 func init() {
 	// OSB Package
 	dl := flag.Bool("dl", false, "Download subtitles to all selected files.")
 	lang := flag.String("lang", "eng", "Set language to download subtitles. Default: 'eng'.")
+	mlang := flag.String("mlang", "", "Set multiples languages to download subtitles.")
+	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
 
 	// Manager
 	p := flag.String("p", "", "Set the root path.")
@@ -51,8 +60,9 @@ func init() {
 	org := flag.Bool("org", false, "Organize all files in selected directy.")
 
 	flag.Parse()
-	fg.Get = []string{*p, *e, *v, *m, *lang}
+	fg.Get = []string{*p, *e, *v, *m, *lang, *mlang}
 	fg.Options = []bool{*d, *h, *o, *org, *dl}
+	fg.Const = []int{*rate}
 }
 
 func main() {
@@ -83,13 +93,29 @@ func main() {
 			select {
 			case hashSize := <-cHash:
 				cDone := make(chan string)
-				subs, err := osb.SearchHashSub(hashSize[0], hashSize[1], fg.Get[lang])
+				// Check if mlang is set
+				mlg := func(mlang string) bool {
+					if mlang != "" {
+						return true
+					}
+					return false
+				}(fg.Get[mlang])
+				subs, err := osb.SearchHashSub(hashSize[0], hashSize[1], fg.Get[lang], mlg)
 				if err != nil {
 					fmt.Fprintf(os.Stdout, "Request: searchHashSub: %s", err.Error())
 				}
+				// Filter subtitles
+				langs := getLangs()
+				subs = osb.FilterSubtitles(subs, langs)
+				// Confirm Download
+				if !ConfirmAction("Do you want to download these subtitles") {
+					log.Println("Task canceled.")
+					os.Exit(1)
+				}
+				// Download subtitles
+				fmt.Fprintln(os.Stdout, "Downloading subtitles...")
 				for _, sub := range subs {
 					go func(sub osb.Subtitle) {
-						//fmt.Fprintf(os.Stdout, "SUB FOUND: %s - Language: %s\n", sub.FileName, sub.LanguageName)
 						err := osb.DownloadSub(&sub)
 						if err != nil {
 							cErr <- err
@@ -106,7 +132,7 @@ func main() {
 				for range subs {
 					select {
 					case err := <-cErr:
-						fmt.Fprintf(os.Stdout, "Request: %s\n", err.Error())
+						log.Fatalf("Request: %s\n", err.Error())
 					case file := <-cDone:
 						fmt.Fprintf(os.Stdout, "Request: File %s downloaded with success!\n", file)
 					}
