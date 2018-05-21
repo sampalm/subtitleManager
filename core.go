@@ -22,7 +22,7 @@ const (
 	ext
 	version
 	move
-	req
+	lang
 )
 
 // options
@@ -31,11 +31,13 @@ const (
 	help
 	only
 	org
+	dl
 )
 
 func init() {
 	// OSB Package
-	r := flag.String("r", "", "Download subtitles.")
+	dl := flag.Bool("dl", false, "Download subtitles to all selected files.")
+	lang := flag.String("lang", "eng", "Set language to download subtitles. Default: 'eng'.")
 
 	// Manager
 	p := flag.String("p", "", "Set the root path.")
@@ -49,8 +51,8 @@ func init() {
 	org := flag.Bool("o", false, "Organize all files in selected directy.")
 
 	flag.Parse()
-	fg.Get = []string{*p, *e, *v, *m, *r}
-	fg.Options = []bool{*d, *h, *o, *org}
+	fg.Get = []string{*p, *e, *v, *m, *lang}
+	fg.Options = []bool{*d, *h, *o, *org, *dl}
 }
 
 func main() {
@@ -62,7 +64,7 @@ func main() {
 	case fg.Get[path] == "":
 		log.Println("Path must be defined.")
 		break
-	case fg.Get[req] != "":
+	case fg.Options[dl]:
 		var cErr = make(chan error)
 		var cHash = make(chan []string)
 		var cSub = make(chan []osb.Subtitle)
@@ -81,7 +83,7 @@ func main() {
 			select {
 			case hashSize := <-cHash:
 				cDone := make(chan string)
-				subs, err := osb.SearchHashSub(hashSize[0], hashSize[1])
+				subs, err := osb.SearchHashSub(hashSize[0], hashSize[1], fg.Get[lang])
 				if err != nil {
 					fmt.Fprintf(os.Stdout, "Request: searchHashSub: %s", err.Error())
 				}
@@ -93,7 +95,11 @@ func main() {
 							cErr <- err
 						}
 						// CREATE SUB
-						create(sub.FileName, sub.Body.Bytes(), fg.Get[path])
+						path := fg.Get[path]
+						if fg.Get[move] != "" {
+							path = fg.Get[move]
+						}
+						create(sub.FileName, sub.Body.Bytes(), path)
 						cDone <- sub.FileName
 					}(sub)
 				}
