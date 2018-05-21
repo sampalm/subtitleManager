@@ -27,8 +27,12 @@ const ChunkSize = 65536
 
 var client = &http.Client{}
 
-func SearchHashSub(hash, size, lang string) (subs []Subtitle, err error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s/sublanguageid-%s", size, hash, lang), nil)
+func SearchHashSub(hash, size, lang string, mlang bool) (subs []Subtitle, err error) {
+	url := fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s/sublanguageid-%s", size, hash, lang)
+	if mlang {
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s", size, hash)
+	}
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
 	}
@@ -55,6 +59,9 @@ func DownloadSub(sub *Subtitle) error {
 	defer res.Body.Close()
 	rd, err := gzip.NewReader(res.Body)
 	if err != nil {
+		if err.Error() == "gzip: invalid header" {
+			return fmt.Errorf("downloadSub: gzipExtract: couldn't download the file, try again later")
+		}
 		return fmt.Errorf("downloadSub: gzipExtract: %s", err.Error())
 	}
 	defer rd.Close()
@@ -110,4 +117,28 @@ func readChunk(file *os.File, offset int64, buf []byte) (err error) {
 		return fmt.Errorf("Invalid read %v", n)
 	}
 	return
+}
+
+func FilterSubtitles(subs []Subtitle, langs []string) []Subtitle {
+	// Filter subtitles
+	subs = func(subs []Subtitle) []Subtitle {
+		var newSubs []Subtitle
+		for _, sub := range subs {
+			if langs != nil {
+				for _, lang := range langs {
+					if sub.LanguageID == lang {
+						newSubs = append(newSubs, sub)
+						break
+					}
+				}
+			}
+		}
+		return newSubs
+	}(subs)
+	// List filtered subtitles
+	fmt.Fprintln(os.Stdout, "***** SUBTITLES FOUND *****")
+	for _, sub := range subs {
+		fmt.Fprintf(os.Stdout, "--------------------------------\nSubtitle: %s\nLanguage/ID: %s/%s\nRating: %s\n--------------------------------\n", sub.FileName, sub.LanguageName, sub.LanguageID, sub.Rating)
+	}
+	return subs
 }
