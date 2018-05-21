@@ -27,8 +27,8 @@ const ChunkSize = 65536
 
 var client = &http.Client{}
 
-func SearchHashSub(hash, size string) (subs []Subtitle, err error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s", size, hash), nil)
+func SearchHashSub(hash, size, lang string) (subs []Subtitle, err error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s/sublanguageid-%s", size, hash, lang), nil)
 	if err != nil {
 		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
 	}
