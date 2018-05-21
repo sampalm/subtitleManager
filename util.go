@@ -28,6 +28,8 @@ Flags:
 	v		Set the subtitle version. eg: "720p-WEB". (Required)
 	m		Set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
 	lang	Set the language for download subtitles. Default language: "eng". (Optional)
+	mlang	Set multi-languages for download subtitles. (Optional)
+	rate	Set minimum rating for download subtitles. (Optional)
 
 Options:
 	org		Organize all files in selected directy. (Optional)
