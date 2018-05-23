@@ -43,7 +43,7 @@ const (
 
 func init() {
 	// OSB Package
-	dl := flag.Bool("dl", false, "Download subtitles to all selected files.")
+	dl := flag.Bool("dd", false, "Download subtitles to all selected files.")
 	lang := flag.String("lang", "eng", "Set language to download subtitles. Default: 'eng'.")
 	mlang := flag.String("mlang", "", "Set multiples languages to download subtitles.")
 	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
@@ -52,10 +52,10 @@ func init() {
 	p := flag.String("p", "", "Set the root path.")
 	e := flag.String("e", ".srt", "Set the extension of the file.")
 	v := flag.String("v", "", "Set the version of the subtitle.")
-	m := flag.String("m", "", "Only move files to this selected directory.")
+	m := flag.String("move", "", "Only move files to this selected directory.")
 
 	d := flag.Bool("d", false, "Only delete files in selected directory.")
-	h := flag.Bool("h", false, "Returns basic instructions to use Subtitle Manager.")
+	h := flag.Bool("help", false, "Returns basic instructions to use Subtitle Manager.")
 	o := flag.Bool("only", false, "Runs search only into the main path.")
 	org := flag.Bool("org", false, "Organize all files in selected directy.")
 
