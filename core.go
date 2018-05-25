@@ -30,7 +30,8 @@ const (
 	help
 	only
 	org
-	dl
+	dd
+	fc
 )
 
 // const
@@ -40,10 +41,11 @@ const (
 
 func init() {
 	// OSB Package
-	dl := flag.Bool("dd", false, "Download subtitles to all selected files.")
+	dd := flag.Bool("dd", false, "Download subtitles to all selected files.")
 	lang := flag.String("lang", "eng", "Set language to download subtitles. Default: 'eng'.")
 	mlang := flag.String("mlang", "", "Set multiples languages to download subtitles.")
 	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
+	fc := flag.Bool("force", false, "Will force all downloads, don't need to confirm.")
 
 	// Manager
 	p := flag.String("p", "", "Set the root path.")
@@ -58,7 +60,7 @@ func init() {
 
 	flag.Parse()
 	fg.Get = []string{*p, *e, *v, *m, *lang, *mlang}
-	fg.Options = []bool{*d, *h, *o, *org, *dl}
+	fg.Options = []bool{*d, *h, *o, *org, *dd, *fc}
 	fg.Const = []int{*rate}
 }
 
@@ -71,7 +73,7 @@ func main() {
 	case fg.Get[path] == "":
 		log.Println("Path must be defined.")
 		break
-	case fg.Options[dl]:
+	case fg.Options[dd]:
 		files, err := fg.FetchAll()
 		CheckErr("Request", 1, err)
 		fg.SaveAll(files)
