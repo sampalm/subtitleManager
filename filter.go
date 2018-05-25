@@ -6,12 +6,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/sampalm/subtitleManager/osb"
 )
 
 // File used to save files info
@@ -312,4 +316,82 @@ func getLangs() []string {
 		return strings.Split(strings.TrimSpace(langs), ",")
 	}
 	return nil
+}
+
+func (fg Flag) SaveAll(files []*os.File) {
+	var cErr = make(chan error)
+	var cFile = make(chan map[string]string)
+	for in, file := range files {
+		go func(file *os.File) {
+			fs, _ := file.Stat()
+			hash, size, err := osb.HashFile(file)
+			if err != nil {
+				cErr <- err
+			}
+			cFile <- map[string]string{"index": strconv.Itoa(in), "hash": fmt.Sprintf("%x", hash), "size": fmt.Sprint(size), "name": fs.Name()}
+		}(file)
+	}
+
+	for range files {
+		select {
+		case file := <-cFile:
+			cDone := make(chan string)
+			// Check if mlang is set
+			mlg := func(mlang string) bool {
+				if mlang != "" {
+					return true
+				}
+				return false
+			}(fg.Get[mlang])
+			subs, err := osb.SearchHashSub(file["hash"], file["size"], fg.Get[lang], mlg)
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "Request: searchHashSub: %s\n", err.Error())
+			}
+			// Filter subtitles
+			langs := getLangs()
+			subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
+			if len(subs) == 0 {
+				fmt.Fprintf(os.Stdout, "No one subtitles found to %s.\n", file["name"])
+				continue
+			}
+			// Confirm Download
+			if !ConfirmAction("Do you want to download these subtitles") {
+				if in, _ := strconv.Atoi(file["index"]); in == len(files) {
+					log.Println("Task canceled.")
+					os.Exit(1)
+				}
+				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", file["name"])
+				continue
+			}
+			// Download subtitles
+			fmt.Fprintln(os.Stdout, "Downloading subtitles...")
+			for _, sub := range subs {
+				go func(sub osb.Subtitle) {
+					err := osb.DownloadSub(&sub)
+					if err != nil {
+						cErr <- err
+					}
+					// CREATE SUB
+					path := fg.Get[path]
+					if fg.Get[move] != "" {
+						path = fg.Get[move]
+					}
+					create(sub.FileName, sub.Body.Bytes(), path)
+					cDone <- sub.FileName
+				}(sub)
+			}
+			for range subs {
+				select {
+				case err := <-cErr:
+					log.Fatalf("Request: %s\n", err.Error())
+					break
+				case fileName := <-cDone:
+					fmt.Fprintf(os.Stdout, "Request: File %s downloaded with success!\n", fileName)
+					break
+				}
+			}
+		case err := <-cErr:
+			fmt.Fprintf(os.Stdout, "Request: hashFile: %s\n", err.Error())
+		}
+	}
 }
