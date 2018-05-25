@@ -355,13 +355,15 @@ func (fg Flag) SaveAll(files []*os.File) {
 				continue
 			}
 			// Confirm Download
-			if !ConfirmAction("Do you want to download these subtitles") {
-				if in, _ := strconv.Atoi(file["index"]); in == len(files) {
-					log.Println("Task canceled.")
-					os.Exit(1)
+			if !fg.Options[fc] {
+				if !ConfirmAction("Do you want to download these subtitles") {
+					if in, _ := strconv.Atoi(file["index"]); in == len(files) {
+						log.Println("Task canceled.")
+						os.Exit(1)
+					}
+					fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", file["name"])
+					continue
 				}
-				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", file["name"])
-				continue
 			}
 			// Download subtitles
 			fmt.Fprintln(os.Stdout, "Downloading subtitles...")
