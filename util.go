@@ -36,7 +36,8 @@ Options:
 	d		Delete files in selected directory and sub-directories. (Optional)
 	h		Returns basic instructions to use Subtitle Manager. (Optional)
 	only	Restrict all set options to be executed only in the main path. It will ignore all sub-directories. (Optional)
-	dl		Download subtitles to all files inside main path. (Optional)
+	dd		Download subtitles to all files inside main path. (Optional)
+	force	Will force all downloads and ignores confirm messages. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
