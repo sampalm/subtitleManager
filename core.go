@@ -2,11 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
-
-	"github.com/sampalm/subtitleManager/osb"
 )
 
 type Flag struct {
@@ -75,80 +72,9 @@ func main() {
 		log.Println("Path must be defined.")
 		break
 	case fg.Options[dl]:
-		var cErr = make(chan error)
-		var cHash = make(chan []string)
-		var cSub = make(chan []osb.Subtitle)
 		files, err := fg.FetchAll()
 		CheckErr("Request", 1, err)
-		for _, file := range files {
-			go func(file *os.File) {
-				hash, size, err := osb.HashFile(file)
-				if err != nil {
-					cErr <- err
-				}
-				cHash <- []string{fmt.Sprintf("%x", hash), fmt.Sprint(size)}
-			}(file)
-		}
-		for range files {
-			select {
-			case hashSize := <-cHash:
-				cDone := make(chan string)
-				// Check if mlang is set
-				mlg := func(mlang string) bool {
-					if mlang != "" {
-						return true
-					}
-					return false
-				}(fg.Get[mlang])
-				subs, err := osb.SearchHashSub(hashSize[0], hashSize[1], fg.Get[lang], mlg)
-				if err != nil {
-					fmt.Fprintf(os.Stdout, "Request: searchHashSub: %s", err.Error())
-				}
-				// Filter subtitles
-				langs := getLangs()
-				subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
-				if len(subs) == 0 {
-					log.Println("None subtitles found.")
-					os.Exit(1)
-				}
-				// Confirm Download
-				if !ConfirmAction("Do you want to download these subtitles") {
-					log.Println("Task canceled.")
-					os.Exit(1)
-				}
-				// Download subtitles
-				fmt.Fprintln(os.Stdout, "Downloading subtitles...")
-				for _, sub := range subs {
-					go func(sub osb.Subtitle) {
-						err := osb.DownloadSub(&sub)
-						if err != nil {
-							cErr <- err
-						}
-						// CREATE SUB
-						path := fg.Get[path]
-						if fg.Get[move] != "" {
-							path = fg.Get[move]
-						}
-						create(sub.FileName, sub.Body.Bytes(), path)
-						cDone <- sub.FileName
-					}(sub)
-				}
-				for range subs {
-					select {
-					case err := <-cErr:
-						log.Fatalf("Request: %s\n", err.Error())
-					case file := <-cDone:
-						fmt.Fprintf(os.Stdout, "Request: File %s downloaded with success!\n", file)
-					}
-				}
-			case err := <-cErr:
-				fmt.Fprintf(os.Stdout, "Request: hashFile: %s\n", err.Error())
-			case subs := <-cSub:
-				for _, sub := range subs {
-					fmt.Fprintf(os.Stdout, "Sub name: %s\nSub link: %s\n", sub.FileName, sub.DownloadLink)
-				}
-			}
-		}
+		fg.SaveAll(files)
 		break
 	case fg.Options[org]:
 		if !ConfirmAction("This task will move all files that will be found") {
