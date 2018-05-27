@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -176,10 +177,16 @@ func delete(path string) {
 }
 
 func create(name string, body []byte, path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := os.MkdirAll(path, 0642); err != nil {
+			fmt.Fprintf(os.Stdout, "create: could not create directory: %s, reason: %v\n", fg.Get[move], err)
+			return
+		}
+	}
 	file := filepath.Join(path, name)
 	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, Error: %v\n", file, err)
+		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, reason: %v\n", file, err)
 		errFound = true
 		log := Log{
 			Func: "create",
@@ -191,7 +198,7 @@ func create(name string, body []byte, path string) {
 	defer f.Close()
 
 	if _, err := f.Write(body); err != nil {
-		fmt.Fprintf(os.Stdout, "createFile: could not save file: %s, Error: %v\n", file, err)
+		fmt.Fprintf(os.Stdout, "createFile: could not save file: %s, reason: %v\n", file, err)
 		errFound = true
 		log := Log{
 			Func: "create",
@@ -313,18 +320,90 @@ func getLangs() []string {
 	return nil
 }
 
-func (fg Flag) SaveAll(files []*os.File) {
+func (fg Flag) SaveQueryFiles() {
+	var sname string
+	var err error
+	var subs []osb.Subtitle
+	cDone := make(chan string)
+	cErr := make(chan error)
+	// Check if mlang is set
+	mlang := func(mlang string) bool {
+		if mlang != "" {
+			return true
+		}
+		return false
+	}(fg.Get[mlang])
+	lang := fg.Get[lang]
+	if fg.Get[sn] != "" {
+		sname = url.PathEscape(fg.Get[sn])
+	}
+	switch {
+	case fg.Get[ss] != "":
+		ss := url.PathEscape(fg.Get[ss])
+		subs, err = osb.SearchFullSub(sname, ss, fg.Get[se], lang, mlang)
+		break
+	default:
+		subs, err = osb.SearchQuerySub(sname, lang, mlang)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "Request: searchHashSub: %s\n", err.Error())
+	}
+	// Filter subtitles
+	sname, _ = url.PathUnescape(sname)
+	langs := getLangs()
+	subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
+	if len(subs) == 0 {
+		fmt.Fprintf(os.Stdout, "No one subtitles found to %s.\n", sname)
+		return
+	}
+	// Confirm Download
+	if !fg.Options[fc] {
+		if !ConfirmAction("Do you want to download these subtitles") {
+			fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", sname)
+			return
+		}
+	}
+	// Download subtitles
+	fmt.Fprintln(os.Stdout, "Downloading subtitles...")
+	for _, sub := range subs {
+		go func(sub osb.Subtitle) {
+			err := osb.DownloadSub(&sub)
+			if err != nil {
+				cErr <- err
+			}
+			// CREATE SUB
+			path := filepath.Join(fg.Get[path], "downloads")
+			if fg.Get[move] != "" {
+				path = fg.Get[move]
+			}
+			create(sub.FileName, sub.Body.Bytes(), path)
+			cDone <- sub.FileName
+		}(sub)
+	}
+	for range subs {
+		select {
+		case err := <-cErr:
+			log.Fatalf("Request: %s\n", err.Error())
+			break
+		case fileName := <-cDone:
+			fmt.Fprintf(os.Stdout, "Request: File %s downloaded with success!\n", fileName)
+			break
+		}
+	}
+}
+
+func (fg Flag) SaveHashFiles(files []*os.File) {
 	var cErr = make(chan error)
 	var cFile = make(chan map[string]string)
 	for in, file := range files {
-		go func(file *os.File) {
+		go func(in int, file *os.File) {
 			fs, _ := file.Stat()
 			hash, size, err := osb.HashFile(file)
 			if err != nil {
 				cErr <- err
 			}
 			cFile <- map[string]string{"index": strconv.Itoa(in), "hash": fmt.Sprintf("%x", hash), "size": fmt.Sprint(size), "path": filepath.Dir(file.Name()), "name": fs.Name()}
-		}(file)
+		}(in, file)
 	}
 
 	for range files {
