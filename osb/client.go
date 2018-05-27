@@ -185,7 +185,7 @@ func readChunk(file *os.File, offset int64, buf []byte) (err error) {
 	return
 }
 
-func FilterSubtitles(subs []Subtitle, langs []string, rate int) []Subtitle {
+func FilterSubtitles(subs []Subtitle, langs []string, rate int, index bool) []Subtitle {
 	// Filter subtitles
 	subs = func(subs []Subtitle) []Subtitle {
 		var newSubs = subs
@@ -220,7 +220,11 @@ func FilterSubtitles(subs []Subtitle, langs []string, rate int) []Subtitle {
 	}(subs)
 	// List filtered subtitles
 	fmt.Fprintln(os.Stdout, "***** SUBTITLES FOUND *****")
-	for _, sub := range subs {
+	for i, sub := range subs {
+		if index {
+			fmt.Fprintf(os.Stdout, "--------------------------------\n[%d] Subtitle: %s\nLanguage/ID: %s/%s\nRating: %s\n--------------------------------\n", i, sub.FileName, sub.LanguageName, sub.LanguageID, sub.Rating)
+			continue
+		}
 		fmt.Fprintf(os.Stdout, "--------------------------------\nSubtitle: %s\nLanguage/ID: %s/%s\nRating: %s\n--------------------------------\n", sub.FileName, sub.LanguageName, sub.LanguageID, sub.Rating)
 	}
 	return subs
