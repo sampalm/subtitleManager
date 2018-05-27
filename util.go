@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -42,6 +43,7 @@ Options:
 	dd		Download subtitles to all files inside main path. (Optional)
 	force	Will force all downloads and ignores confirm messages. (Optional)
 	search  Set search mode on and enable seach options. (Require to -s* flags)
+	sl 		Will allow you to choose only one subtitle to download. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
@@ -75,6 +77,20 @@ func ConfirmAction(message string) bool {
 		return true
 	}
 	return false
+}
+
+func SelectAction(message string) (int, error) {
+	var selection string
+	fmt.Fprintf(os.Stdout, "%s. You can type 'x' to cancel this task: ", message)
+	fmt.Scan(&selection)
+	if selection == "x" {
+		return 0, fmt.Errorf("selectAction: task canceled")
+	}
+	sel, err := strconv.Atoi(selection)
+	if err != nil {
+		return 0, fmt.Errorf("selectAction: %s", err.Error())
+	}
+	return sel, nil
 }
 
 // CheckErr check if exits an error and print it out with the function that called CheckErr. This function will forces the program to close with os.Exit function.
