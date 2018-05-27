@@ -30,6 +30,9 @@ Flags:
 	lang	Set the language for download subtitles. Default language: "eng". (Optional)
 	mlang	Set multi-languages for download subtitles. (Optional)
 	rate	Set minimum rating for download subtitles. (Optional)
+	sn		Search for subtitles with this name to download. (Optional)
+	ss		Search for subtitles in this season to download. (Required to -se)
+	se		Search for subtitles of this episode to download. (Optional)	
 
 Options:
 	org		Organize all files in selected directy. (Optional)
@@ -38,6 +41,7 @@ Options:
 	only	Restrict all set options to be executed only in the main path. It will ignore all sub-directories. (Optional)
 	dd		Download subtitles to all files inside main path. (Optional)
 	force	Will force all downloads and ignores confirm messages. (Optional)
+	search  Set search mode on and enable seach options. (Require to -s* flags)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
