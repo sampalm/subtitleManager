@@ -22,7 +22,7 @@ To use the application you must use flags to define directories and different fu
 `subtitlemanager [flags] [options...]`
 
 #### Flags [rank] [compatibility]:
-* **-p [6] [all]**	
+* **-p [-] [all]**	
     * Execute the program with "-p" flag to set the main path that contains the subtitles. eg: "./subs/" *(Required)*
     * See some examples of what you can combine with this flag:
         * `-p=./your-path/ -m=./new-path/`
@@ -31,22 +31,28 @@ To use the application you must use flags to define directories and different fu
             -  Get only files with `.sub` extension.
         * `-p=./your-path/ -v=720p`
             - Get only files that are from `720p` version.    
-* **-e [9] [all]**	
+* **-e [-] [all]**	
     * Use it to set the file extension. eg: ".sub" *(Optional)*
-* **-v [7] [all]**	
+* **-v [-] [all]**	
     * Use it to set the subtitle version. eg: "720p-WEB". *(Required)*
-* **-move [4] [2-4-5]**	
+* **-move [5] [all]**	
     * Use it to set the folder to where the files will be moved. eg: "./my-subs/". *(Optional)*
 	    * If you set this flag no files will be deleted, only the files that matched will be moved.
-* **-rate [12] [2]**
+* **-rate [-] [3]**
     * Set a minimum rating to download subtitles. (Optional)
-* **-lang [10] [2]**
+* **-lang [-] [3]**
     * Set the language that the subtitles will be downloaded. (Optional)
-* **-mlang [11] [2]**
+* **-mlang [-] [3]**
     * Set all the languages that the subtitles will be downloaded. (Optional)
+* **-sn [-] [2]**
+    * Search for subtitles with this name to download. (Optional)
+* **-ss [7] [2]**
+    * Search for subtitles in this season to download. (Required to -se)
+* **-se [8] [2-7]**
+    * Search for subtitles of this episode to download. (Optional)
 
 #### Options [rank] [compatibility]:
-* **-d [5] [3-6-7]**	
+* **-d [6] [4-6]**	
     * Delete all files inside the path set by flag[-p]. (Optional)
     * See some examples of what you can combine with this flag:
         * `-p=./your-path/ -d -only`
@@ -55,11 +61,17 @@ To use the application you must use flags to define directories and different fu
             - Will delete all files inside `your-path` that have `.srt` as extension.
 * **-help [1] [none]**	
     * Show all flags and options that are available to use. (Optional)
-* **-only [8] [all]**	
+* **-only [-] [all]**	
     * Execute search only into the main path, it will ignore all subfolders and files within. (Optional)
-* **-org [3] [4-5-6]**	
+* **-org [4] [-]**	
     * Organize all files by title and creates subfolders to each season. (Optional)
-* **-dd [2] [4-10-11-12]**
+* **-search [2] [-]**
+    * Set search mode on and enable seach options. (Require to -s* flags)
+* **-force [9] [2-3]**
+    * Will force all downloads and ignores confirm messages. (Optional)
+* **-sl [10] [2]**
+    * Will allow you to choose only one subtitle to download. (Optional)
+* **-dd [3] [-]**
     * Download subtitles to all found files. (Optional)
     * See some examples of what you can combine with this flag:
         * `-p=./your-path/ -dd -m=./new-path/`
