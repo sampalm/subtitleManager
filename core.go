@@ -36,6 +36,7 @@ const (
 	dd
 	fc
 	search
+	slc
 )
 
 // const
@@ -46,14 +47,15 @@ const (
 func init() {
 	// OSB Package
 	dd := flag.Bool("dd", false, "Download subtitles to all selected files.")
+	fc := flag.Bool("force", false, "Will force all downloads, don't need to confirm.")
+	slc := flag.Bool("sl", false, "Set select mode on.")
+	sch := flag.Bool("search", false, "Set search mode on and enable search options.")
 	lang := flag.String("lang", "eng", "Set language to download subtitles. Default: 'eng'.")
 	mlang := flag.String("mlang", "", "Set multiples languages to download subtitles.")
-	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
-	fc := flag.Bool("force", false, "Will force all downloads, don't need to confirm.")
-	sch := flag.Bool("search", false, "Set search mode on, and enable seach options.")
 	sn := flag.String("sn", "", "Search for subtitles with this name to download.")
 	ss := flag.String("ss", "", "Search for subtitles in this season to download.")
 	se := flag.String("se", "", "Search for subtitles of this episode to download.")
+	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
 
 	// Manager
 	p := flag.String("p", "", "Set the root path.")
@@ -68,7 +70,7 @@ func init() {
 
 	flag.Parse()
 	fg.Get = []string{*p, *e, *v, *m, *lang, *mlang, *sn, *ss, *se}
-	fg.Options = []bool{*d, *h, *o, *org, *dd, *fc, *sch}
+	fg.Options = []bool{*d, *h, *o, *org, *dd, *fc, *sch, *slc}
 	fg.Const = []int{*rate}
 }
 
