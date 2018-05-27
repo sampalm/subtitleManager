@@ -22,6 +22,9 @@ const (
 	move
 	lang
 	mlang
+	sn
+	ss
+	se
 )
 
 // options
@@ -32,6 +35,7 @@ const (
 	org
 	dd
 	fc
+	search
 )
 
 // const
@@ -46,6 +50,10 @@ func init() {
 	mlang := flag.String("mlang", "", "Set multiples languages to download subtitles.")
 	rate := flag.Int("rate", 0, "Set a minimum rating to download subtitles.")
 	fc := flag.Bool("force", false, "Will force all downloads, don't need to confirm.")
+	sch := flag.Bool("search", false, "Set search mode on, and enable seach options.")
+	sn := flag.String("sn", "", "Search for subtitles with this name to download.")
+	ss := flag.String("ss", "", "Search for subtitles in this season to download.")
+	se := flag.String("se", "", "Search for subtitles of this episode to download.")
 
 	// Manager
 	p := flag.String("p", "", "Set the root path.")
@@ -59,8 +67,8 @@ func init() {
 	org := flag.Bool("org", false, "Organize all files in selected directy.")
 
 	flag.Parse()
-	fg.Get = []string{*p, *e, *v, *m, *lang, *mlang}
-	fg.Options = []bool{*d, *h, *o, *org, *dd, *fc}
+	fg.Get = []string{*p, *e, *v, *m, *lang, *mlang, *sn, *ss, *se}
+	fg.Options = []bool{*d, *h, *o, *org, *dd, *fc, *sch}
 	fg.Const = []int{*rate}
 }
 
@@ -73,10 +81,13 @@ func main() {
 	case fg.Get[path] == "":
 		log.Println("Path must be defined.")
 		break
+	case fg.Options[search]:
+		fg.SaveQueryFiles()
+		break
 	case fg.Options[dd]:
 		files, err := fg.FetchAll()
 		CheckErr("Request", 1, err)
-		fg.SaveAll(files)
+		fg.SaveHashFiles(files)
 		break
 	case fg.Options[org]:
 		if !ConfirmAction("This task will move all files that will be found") {
