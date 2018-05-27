@@ -176,12 +176,7 @@ func delete(path string) {
 }
 
 func create(name string, body []byte, path string) {
-	fp := filepath.Join(path, "downloads")
-	if err := os.MkdirAll(fp, 0642); err != nil {
-		fmt.Fprintf(os.Stdout, "createFile: could not create directory: %s, Error: %v\n", fp, err)
-		return
-	}
-	file := filepath.Join(fp, name)
+	file := filepath.Join(path, name)
 	f, err := os.OpenFile(file, syscall.O_RDWR|syscall.O_CREAT, 0624)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "createFile: could not create file: %s, Error: %v\n", file, err)
@@ -328,7 +323,7 @@ func (fg Flag) SaveAll(files []*os.File) {
 			if err != nil {
 				cErr <- err
 			}
-			cFile <- map[string]string{"index": strconv.Itoa(in), "hash": fmt.Sprintf("%x", hash), "size": fmt.Sprint(size), "name": fs.Name()}
+			cFile <- map[string]string{"index": strconv.Itoa(in), "hash": fmt.Sprintf("%x", hash), "size": fmt.Sprint(size), "path": filepath.Dir(file.Name()), "name": fs.Name()}
 		}(file)
 	}
 
@@ -374,7 +369,7 @@ func (fg Flag) SaveAll(files []*os.File) {
 						cErr <- err
 					}
 					// CREATE SUB
-					path := fg.Get[path]
+					path := file["path"]
 					if fg.Get[move] != "" {
 						path = fg.Get[move]
 					}
