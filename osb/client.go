@@ -54,17 +54,27 @@ func SearchQuerySub(name, lang string, mlang bool) (subs []Subtitle, err error) 
 	return
 }
 
-func SearchFullSub(name, season, episode, lang string, mlang bool) (subs []Subtitle, err error) {
-	if name == "" {
+func SearchFullSub(sn, ss, se, lang string, mlang bool) (subs []Subtitle, err error) {
+	if sn == "" {
 		return nil, fmt.Errorf("searchSub: invalid query name")
 	}
-	if season == "" {
-		return nil, fmt.Errorf("searchSub: invalid query name")
+	if ss == "" {
+		return nil, fmt.Errorf("searchSub: invalid query season")
 	}
-	if episode == "" {
-		return nil, fmt.Errorf("searchSub: invalid query name")
+	var url string
+	switch {
+	case mlang && se != "":
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s/episode-%s", sn, ss, se)
+		break
+	case mlang:
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s", sn, ss)
+		break
+	case se != "":
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s/episode-%s/sublanguageid-%s", sn, ss, se, lang)
+		break
+	default:
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s/sublanguageid-%s", sn, se, lang)
 	}
-	url := fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s/episode-%s/sublanguageid-%s", name, season, episode, lang)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
