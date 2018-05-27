@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -351,16 +352,33 @@ func (fg Flag) SaveQueryFiles() {
 	// Filter subtitles
 	sname, _ = url.PathUnescape(sname)
 	langs := getLangs()
-	subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
+	subs = osb.FilterSubtitles(subs, langs, fg.Const[rate], fg.Options[slc])
 	if len(subs) == 0 {
 		fmt.Fprintf(os.Stdout, "No one subtitles found to %s.\n", sname)
 		return
 	}
 	// Confirm Download
 	if !fg.Options[fc] {
-		if !ConfirmAction("Do you want to download these subtitles") {
-			fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", sname)
-			return
+		switch {
+		case fg.Options[slc]:
+			n, err := SelectAction("Select one subtitle to download (Only integers. Ex: 1).")
+			tn := reflect.TypeOf(n).Kind()
+			if tn != reflect.Int || n > len(subs) || n < 0 {
+				nErr := "you must type an integer number which match with amount of results"
+				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles. Invalid selection: %s\n", sname, nErr)
+				return
+			}
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles. %s\n", sname, err.Error())
+				return
+			}
+			subs = subs[n : n+1]
+			break
+		default:
+			if !ConfirmAction("Do you want to download these subtitles") {
+				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles.\n", sname)
+				return
+			}
 		}
 	}
 	// Download subtitles
@@ -423,7 +441,7 @@ func (fg Flag) SaveHashFiles(files []*os.File) {
 			}
 			// Filter subtitles
 			langs := getLangs()
-			subs = osb.FilterSubtitles(subs, langs, fg.Const[rate])
+			subs = osb.FilterSubtitles(subs, langs, fg.Const[rate], false)
 			if len(subs) == 0 {
 				fmt.Fprintf(os.Stdout, "No one subtitles found to %s.\n", file["name"])
 				continue
