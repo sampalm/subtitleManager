@@ -28,6 +28,61 @@ const ChunkSize = 65536
 
 var client = &http.Client{}
 
+func SearchQuerySub(name, lang string, mlang bool) (subs []Subtitle, err error) {
+	if name == "" {
+		return nil, fmt.Errorf("searchSub: invalid query name")
+	}
+	url := fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/sublanguageid-%s", name, lang)
+	if mlang {
+		url = fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s", name)
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
+	}
+	req.Header.Set("User-Agent", "TemporaryUserAgent")
+	req.Header.Set("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		err = fmt.Errorf("searchSub: ClientDo: %s", err.Error())
+	}
+	defer res.Body.Close()
+	err = json.NewDecoder(res.Body).Decode(&subs)
+	if err != nil {
+		err = fmt.Errorf("searchSub: Decoding: %s", err.Error())
+	}
+	return
+}
+
+func SearchFullSub(name, season, episode, lang string, mlang bool) (subs []Subtitle, err error) {
+	if name == "" {
+		return nil, fmt.Errorf("searchSub: invalid query name")
+	}
+	if season == "" {
+		return nil, fmt.Errorf("searchSub: invalid query name")
+	}
+	if episode == "" {
+		return nil, fmt.Errorf("searchSub: invalid query name")
+	}
+	url := fmt.Sprintf("https://rest.opensubtitles.org/search/query-%s/season-%s/episode-%s/sublanguageid-%s", name, season, episode, lang)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
+	}
+	req.Header.Set("User-Agent", "TemporaryUserAgent")
+	req.Header.Set("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		err = fmt.Errorf("searchSub: ClientDo: %s", err.Error())
+	}
+	defer res.Body.Close()
+	err = json.NewDecoder(res.Body).Decode(&subs)
+	if err != nil {
+		err = fmt.Errorf("searchSub: Decoding: %s", err.Error())
+	}
+	return
+}
+
 func SearchHashSub(hash, size, lang string, mlang bool) (subs []Subtitle, err error) {
 	url := fmt.Sprintf("https://rest.opensubtitles.org/search/moviebytesize-%s/moviehash-%s/sublanguageid-%s", size, hash, lang)
 	if mlang {
