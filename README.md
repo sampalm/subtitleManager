@@ -31,6 +31,7 @@ To use the application you must use flags to define directories and different fu
 * -dd `Download subtitles to all found files inside your root path.`
     * -rate `Defines the minimum rating.`
     * -lang `Defines the language. (Default: English/eng)`
+        - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
     * -mlang `Defines multiple languages.`
     * -force `Ignores all confirm messages.`
     * -sl `Allow you to choose only one subtitle to download.`
