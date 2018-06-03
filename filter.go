@@ -39,7 +39,6 @@ type Sub struct {
 type Media struct {
 	Title    string
 	Season   string
-	Size     int64
 	Language string
 }
 
@@ -93,14 +92,10 @@ func buffering(name, path string) (sub Sub) {
 		fmt.Fprintf(os.Stdout, "copyAllFiles: cannot copy file %s err: %s", name, err.Error())
 		return
 	}
-	st, _ := fl.Stat()
 	sub = Sub{
 		Name: name,
 		Path: path,
 		Body: b,
-		Media: Media{
-			Size: st.Size(),
-		},
 	}
 	return
 }
