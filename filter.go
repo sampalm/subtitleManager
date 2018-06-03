@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -362,8 +361,7 @@ func (fg Flag) SaveQueryFiles() {
 		switch {
 		case fg.Options[slc]:
 			n, err := SelectAction("Select one subtitle to download (Only integers. Ex: 1).")
-			tn := reflect.TypeOf(n).Kind()
-			if tn != reflect.Int || n > len(subs) || n < 0 {
+			if n > len(subs) || n < 0 {
 				nErr := "you must type an integer number which match with amount of results"
 				fmt.Fprintf(os.Stdout, "Skip downloads from %s subtitles. Invalid selection: %s\n", sname, nErr)
 				return
