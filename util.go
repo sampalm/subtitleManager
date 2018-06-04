@@ -23,27 +23,32 @@ func PrintHelp() {
 Usage:
 	subtitlemanager [flags] [options...]
 
-Flags:
+	Base Flag
 	p		Set the main path. eg: "./subs/" (Required)
-	e		Set the file extension. eg: ".sub" (Optional)
-	v		Set the subtitle version. eg: "720p-WEB". (Required)
-	m		Set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
-	lang	Set the language for download subtitles. Default language: "eng". (Optional)
-	mlang	Set multi-languages for download subtitles. (Optional)
-	rate	Set minimum rating for download subtitles. (Optional)
-	sn		Search for subtitles with this name to download. (Optional)
-	ss		Search for subtitles in this season to download. (Required to -se)
-	se		Search for subtitles of this episode to download. (Optional)	
+	e		Set the file extension. eg: ".sub" 
+	v		Set the subtitle version. eg: "720p-WEB". 
+	h		Returns basic instructions to use Subtitle Manager. (Optional)
 
-Options:
+	Download Subtitles
+	dd		Download subtitles to all files inside main path. (Required)
+	lang	Set the language for download subtitles. Default language: "eng". 
+	mlang	Set multi-languages for download subtitles. 
+	rate	Set minimum rating for download subtitles. 
+	force	Will force all downloads and ignores confirm messages. 
+
+	Search Subtitles
+	search  Set search mode on and enable seach options. (Require)
+	sn		Search for subtitles with this name to download.
+	ss		Search for subtitles in this season to download. (Required to -se)
+	se		Search for subtitles of this episode to download.
+	sl 		Will allow you to choose only one subtitle to download.
+	force	Will force all downloads and ignores confirm messages.
+
+	Manage Subtitles
+	m		Set the folder to where the files will be moved. eg: "./my-subs/" (Optional)
 	org		Organize all files in selected directy. (Optional)
 	d		Delete files in selected directory and sub-directories. (Optional)
-	h		Returns basic instructions to use Subtitle Manager. (Optional)
 	only	Restrict all set options to be executed only in the main path. It will ignore all sub-directories. (Optional)
-	dd		Download subtitles to all files inside main path. (Optional)
-	force	Will force all downloads and ignores confirm messages. (Optional)
-	search  Set search mode on and enable seach options. (Require to -s* flags)
-	sl 		Will allow you to choose only one subtitle to download. (Optional)
 	
 Additional:
 	If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com

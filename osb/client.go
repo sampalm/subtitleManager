@@ -45,6 +45,7 @@ func SearchQuerySub(name, lang string, mlang bool) (subs []Subtitle, err error) 
 	res, err := client.Do(req)
 	if err != nil {
 		err = fmt.Errorf("searchSub: ClientDo: %s", err.Error())
+		log.Fatalln(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&subs)
@@ -78,6 +79,7 @@ func SearchFullSub(sn, ss, se, lang string, mlang bool) (subs []Subtitle, err er
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		err = fmt.Errorf("searchSub: NewRequest: %s", err.Error())
+		log.Fatalln(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	req.Header.Set("User-Agent", "TemporaryUserAgent")
 	req.Header.Set("Content-Type", "application/json")
@@ -107,6 +109,7 @@ func SearchHashSub(hash, size, lang string, mlang bool) (subs []Subtitle, err er
 	res, err := client.Do(req)
 	if err != nil {
 		err = fmt.Errorf("searchSub: ClientDo: %s", err.Error())
+		log.Fatalln(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&subs)
@@ -120,7 +123,8 @@ func DownloadSub(sub *Subtitle) error {
 	var b = &bytes.Buffer{}
 	res, err := http.Get(sub.DownloadLink)
 	if err != nil {
-		return fmt.Errorf("downloadSub: downloadSubtitle: %s", err.Error())
+		err = fmt.Errorf("downloadSub: downloadSubtitle: %s", err.Error())
+		log.Fatalln(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	defer res.Body.Close()
 	rd, err := gzip.NewReader(res.Body)
@@ -191,7 +195,7 @@ func FilterSubtitles(subs []Subtitle, langs []string, rate int, index bool) []Su
 		var newSubs = subs
 		// Filter langs
 		if langs != nil {
-			var langSubs []Subtitle
+			var langSubs = make([]Subtitle, 0, len(newSubs))
 			for _, sub := range subs {
 				for _, lang := range langs {
 					if sub.LanguageID == lang {
@@ -204,7 +208,7 @@ func FilterSubtitles(subs []Subtitle, langs []string, rate int, index bool) []Su
 		}
 		// Filter rating
 		if rate != 0 {
-			var rateSubs []Subtitle
+			var rateSubs = make([]Subtitle, 0, len(newSubs))
 			if langs == nil {
 				newSubs = subs
 			}
