@@ -10,11 +10,15 @@ import (
 
 const bufSize = 4 * 1024 * 1024
 
+var exts = map[string]bool{".srt": true, ".sub": true, ".sbv": true}
+
 type File struct {
 	Name string
 	Path string
 	Ext  string
 }
+
+type PullFiles func(root string, fl *[]File) error
 
 func crawler(fl *[]File) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
@@ -24,7 +28,8 @@ func crawler(fl *[]File) filepath.WalkFunc {
 		if info.IsDir() {
 			return nil
 		}
-		if filepath.Ext(path) != ".srt" {
+		// Check for valid extensions
+		if _, ok := exts[filepath.Ext(path)]; !ok {
 			return nil
 		}
 		f := File{
@@ -55,7 +60,8 @@ func PullDir(root string, fl *[]File) error {
 		if d.IsDir() {
 			return nil
 		}
-		if filepath.Ext(m[i]) != ".srt" {
+		// Check for valid extensions
+		if _, ok := exts[filepath.Ext(m[i])]; !ok {
 			continue
 		}
 		f := File{
@@ -119,21 +125,20 @@ func PullOut(dst, src string) (int64, error) {
 	return bw, nil
 }
 
-func main() {
+func MoveFiles(dst, src string, p PullFiles) {
 	var fl []File
-	err := PullDir(os.Args[1], &fl)
-	if err != nil {
+	// Check source dir
+	if _, err := os.Stat(dst); os.IsNotExist(err) {
+		if err = os.MkdirAll(dst, os.ModePerm); err != nil {
+			panic(err)
+		}
+	}
+	if err := p(src, &fl); err != nil {
 		panic(err)
 	}
 	for _, f := range fl {
-		// Check source dir
-		if _, err := os.Stat(os.Args[2]); os.IsNotExist(err) {
-			if err = os.MkdirAll(os.Args[2], os.ModePerm); err != nil {
-				panic(err)
-			}
-		}
 		// PullOut files
-		dst := filepath.Join(os.Args[2], f.Name)
+		dst := filepath.Join(dst, f.Name)
 		fmt.Printf("Creating File: %s\n", f.Name)
 		bw, err := PullOut(dst, f.Path)
 		if err != nil {
@@ -142,4 +147,23 @@ func main() {
 		}
 		fmt.Println("File created, bytes written: ", bw)
 	}
+}
+
+func DeleteFiles(path string, p PullFiles) {
+	var fl []File
+	if err := p(path, &fl); err != nil {
+		panic(err)
+	}
+	if len(fl) == 0 {
+		return
+	}
+	for i := range fl {
+		os.RemoveAll(fl[i].Path)
+	}
+	fmt.Println("Root folder cleaned.")
+}
+
+func main() {
+	MoveFiles(os.Args[2], os.Args[1], PullDir)
+	DeleteFiles(os.Args[1], PullDir)
 }
