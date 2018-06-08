@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"syscall"
 )
 
@@ -16,16 +18,26 @@ type File struct {
 	Name string
 	Path string
 	Ext  string
+	Info
 }
 
-type PullFiles func(root string, fl *[]File) error
+type Info struct {
+	Title  string
+	Season string
+}
 
-func crawler(fl *[]File) filepath.WalkFunc {
+type PullFiles func(root, ignore string, fl *[]File) error
+
+func crawler(ignore string, fl *[]File) filepath.WalkFunc {
+	ignore = filepath.Join(ignore)
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
+			if path == ignore {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		// Check for valid extensions
@@ -42,23 +54,25 @@ func crawler(fl *[]File) filepath.WalkFunc {
 	}
 }
 
-func PullTreeDir(root string, fl *[]File) error {
-	err := filepath.Walk(root, crawler(fl))
+func PullTreeDir(root, ignore string, fl *[]File) error {
+	err := filepath.Walk(root, crawler(ignore, fl))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func PullDir(root string, fl *[]File) error {
+func PullDir(root, ignore string, fl *[]File) error {
+	ignore = filepath.Join(ignore)
 	m, _ := filepath.Glob(filepath.Join(root, "*"))
 	for i := range m {
 		d, err := os.Lstat(m[i])
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
-			return nil
+		// Trying to copy all files to nowhere ?
+		if filepath.Dir(m[i]) == ignore {
+			continue
 		}
 		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(m[i])]; !ok {
@@ -74,6 +88,53 @@ func PullDir(root string, fl *[]File) error {
 	return nil
 }
 
+func pullPath(folder []string, fl *[]File) error {
+	for i := range folder {
+		d, err := os.Lstat(folder[i])
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			path, _ := filepath.Glob(filepath.Join(folder[i], "*"))
+			pullPath(path, fl)
+			continue
+		}
+		// Check for valid extensions
+		if _, ok := exts[filepath.Ext(d.Name())]; !ok {
+			continue
+		}
+		f := File{
+			Name: d.Name(),
+			Path: folder[i],
+			Ext:  filepath.Ext(d.Name()),
+		}
+		regexSplit(f.Name, &f.Info)
+		*fl = append(*fl, f)
+	}
+	return nil
+}
+
+func regexSplit(filename string, info *Info) { // Raising a flag
+	s := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").FindString(filename)
+	n := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").Split(filename, -1)[0]
+	info.Title = strings.TrimSpace(strings.Replace(n, ".", " ", -1))
+	if n != "" {
+		info.Season = strings.TrimSpace(regexp.MustCompile("([a-zA-Z]([0-9])+)").FindString(s))
+	}
+	if s != "" {
+		info.Title = strings.TrimSpace(strings.Replace(strings.Split(n, filepath.Ext(filename))[0], ".", " ", -1))
+	}
+}
+
+func PullCategorized(root, ignore string, fl *[]File) error {
+	m, _ := filepath.Glob(filepath.Join(root, "*"))
+	if err := pullPath(m, fl); err != nil {
+		return err
+	}
+	return nil
+}
+
+// PullOut will pull a file from source path and write it to destine path. Returns a written bytes and an error if any occurs. If a critical error occurs this function will execute a panic.
 func PullOut(dst, src string) (int64, error) {
 	buf := make([]byte, bufSize)
 	bw := int64(0)
@@ -133,7 +194,7 @@ func MoveFiles(dst, src string, p PullFiles) {
 			panic(err)
 		}
 	}
-	if err := p(src, &fl); err != nil {
+	if err := p(src, dst, &fl); err != nil {
 		panic(err)
 	}
 	for _, f := range fl {
@@ -149,9 +210,9 @@ func MoveFiles(dst, src string, p PullFiles) {
 	}
 }
 
-func DeleteFiles(path string, p PullFiles) {
+func DeleteFiles(path, ignore string, p PullFiles) {
 	var fl []File
-	if err := p(path, &fl); err != nil {
+	if err := p(path, ignore, &fl); err != nil {
 		panic(err)
 	}
 	if len(fl) == 0 {
@@ -163,7 +224,38 @@ func DeleteFiles(path string, p PullFiles) {
 	fmt.Println("Root folder cleaned.")
 }
 
+func Categorize(dst, src string, p PullFiles) {
+	var fl []File
+	if dst == "" {
+		dst = src
+	}
+	if err := p(src, dst, &fl); err != nil {
+		panic(err)
+	}
+	for _, f := range fl {
+		fp := filepath.Join(dst, f.Title, f.Season, f.Name)
+		if f.Season == "" { // Raising a flag
+			fp = filepath.Join(dst, f.Name)
+		}
+		// Check source dir
+		if _, err := os.Stat(filepath.Dir(fp)); os.IsNotExist(err) {
+			if err = os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
+				panic(err)
+			}
+		}
+		fmt.Println("Source: ", f.Path, "Destine: ", fp)
+		fmt.Printf("Creating File: %s\n", fp)
+		bw, err := PullOut(fp, f.Path)
+		if err != nil {
+			fmt.Println("Error occurs: ", err)
+			return
+		}
+		fmt.Println("File created, bytes written: ", bw)
+	}
+}
+
 func main() {
-	MoveFiles(os.Args[2], os.Args[1], PullDir)
-	DeleteFiles(os.Args[1], PullDir)
+	//MoveFiles(os.Args[2], os.Args[1], PullDir)
+	//DeleteFiles(os.Args[1], os.Args[2], PullDir)
+	Categorize("", os.Args[1], PullCategorized)
 }
