@@ -12,8 +12,6 @@ If you want to change something in the code you can use:
 go get github.com/sampalm/subtitleManager
 ```
 
-Or you also can download the executable version **[Outdated]**.
-
 ## How to use
 
 To use the application you must use flags to define directories and different functions of the application. For more information use `-help` tag to see a set of instructions explaining the main functions of the application and of each flag or option. You can also combine different flags and options to make multiples task at once, but there are an rank of priority which application uses to execute it fuction, see more information below.
