@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const bufSize = 4 * 1024 * 1024
@@ -115,14 +116,11 @@ func pullPath(folder []string, fl *[]File) error {
 }
 
 func regexSplit(filename string, info *Info) { // Raising a flag
-	s := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").FindString(filename)
-	n := regexp.MustCompile("([a-zA-Z]([0-9])+[a-zA-Z]([0-9])+)").Split(filename, -1)[0]
-	info.Title = strings.TrimSpace(strings.Replace(n, ".", " ", -1))
-	if n != "" {
-		info.Season = strings.TrimSpace(regexp.MustCompile("([a-zA-Z]([0-9])+)").FindString(s))
-	}
-	if s != "" {
-		info.Title = strings.TrimSpace(strings.Replace(strings.Split(n, filepath.Ext(filename))[0], ".", " ", -1))
+	s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(filename)
+	info.Title = strings.TrimSpace(strings.Replace(strings.Split(filename, s)[0], ".", " ", -1))
+	ss := regexp.MustCompile(`[a-zA-Z]([0-9]{2}\D+)`).FindString(s)
+	if ss != "" {
+		info.Season = "Season " + strings.SplitAfter(s, ss)[1]
 	}
 }
 
@@ -210,7 +208,32 @@ func MoveFiles(dst, src string, p PullFiles) {
 	}
 }
 
-func DeleteFiles(path, ignore string, p PullFiles) {
+func delete(fl []File) error {
+	dl := map[string]bool{}
+	for i := range fl {
+		if _, ok := dl[filepath.Dir(fl[i].Path)]; !ok {
+			dl[filepath.Dir(fl[i].Path)] = true
+			fmt.Printf("Folder %s cleaned.\n", filepath.Dir(fl[i].Path))
+		}
+		if err := os.RemoveAll(fl[i].Path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deleteFile(path string, log map[string]bool) error {
+	if _, ok := log[filepath.Dir(path)]; !ok {
+		log[filepath.Dir(path)] = true
+		fmt.Printf("Cleaning %s folder.\n", filepath.Dir(path))
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteFolder(path, ignore string, p PullFiles) {
 	var fl []File
 	if err := p(path, ignore, &fl); err != nil {
 		panic(err)
@@ -218,13 +241,13 @@ func DeleteFiles(path, ignore string, p PullFiles) {
 	if len(fl) == 0 {
 		return
 	}
-	for i := range fl {
-		os.RemoveAll(fl[i].Path)
+	if cerr := delete(fl); cerr != nil {
+		panic(cerr) // raising a flag
 	}
-	fmt.Println("Root folder cleaned.")
 }
 
 func Categorize(dst, src string, p PullFiles) {
+	dl := map[string]bool{}
 	var fl []File
 	if dst == "" {
 		dst = src
@@ -235,7 +258,7 @@ func Categorize(dst, src string, p PullFiles) {
 	for _, f := range fl {
 		fp := filepath.Join(dst, f.Title, f.Season, f.Name)
 		if f.Season == "" { // Raising a flag
-			fp = filepath.Join(dst, f.Name)
+			fp = filepath.Join(dst, f.Title, f.Name)
 		}
 		// Check source dir
 		if _, err := os.Stat(filepath.Dir(fp)); os.IsNotExist(err) {
@@ -243,7 +266,6 @@ func Categorize(dst, src string, p PullFiles) {
 				panic(err)
 			}
 		}
-		fmt.Println("Source: ", f.Path, "Destine: ", fp)
 		fmt.Printf("Creating File: %s\n", fp)
 		bw, err := PullOut(fp, f.Path)
 		if err != nil {
@@ -251,11 +273,18 @@ func Categorize(dst, src string, p PullFiles) {
 			return
 		}
 		fmt.Println("File created, bytes written: ", bw)
+		if err := deleteFile(f.Path, dl); err != nil {
+			fmt.Println("Error occurs: ", err)
+			return
+		}
 	}
 }
 
 func main() {
+	start := time.Now()
 	//MoveFiles(os.Args[2], os.Args[1], PullDir)
 	//DeleteFiles(os.Args[1], os.Args[2], PullDir)
 	Categorize("", os.Args[1], PullCategorized)
+	end := time.Since(start).Seconds()
+	fmt.Printf("Program duration %.02fs. Exiting...\n", end)
 }
