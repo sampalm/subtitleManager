@@ -284,7 +284,8 @@ func main() {
 	start := time.Now()
 	//MoveFiles(os.Args[2], os.Args[1], PullDir)
 	//DeleteFiles(os.Args[1], os.Args[2], PullDir)
-	Categorize("", os.Args[1], PullCategorized)
+	//Categorize("", os.Args[1], PullCategorized)
+	DownloadHashed(os.Args[1], "319b23c54e9cf314", 750005572)
 	end := time.Since(start).Seconds()
 	fmt.Printf("Program duration %.02fs. Exiting...\n", end)
 }
