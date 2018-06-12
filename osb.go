@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/binary"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -41,7 +43,6 @@ const chunkSize = 65536
 
 var client = &http.Client{}
 var uri = "https://rest.opensubtitles.org/search/"
-var c = &Controller{}
 
 func encodeOSB(e Encoder) string {
 	es := e.Encode()
@@ -50,22 +51,29 @@ func encodeOSB(e Encoder) string {
 }
 
 func (c *Controller) osbRequest(method string, params url.Values) error {
+	if len(c.MultiLanguage) == 0 {
+		params.Add("sublanguageid", c.DefaultLanguage)
+	}
 	uri += encodeOSB(params)
+
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("User-Agent", "TemporaryUserAgent")
 	req.Header.Set("Content-Type", "application/json")
+
 	res, err := client.Do(req)
 	if err != nil {
 		panic(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	defer res.Body.Close()
+
 	err = json.NewDecoder(res.Body).Decode(&c.Subtitles)
 	if err != nil {
 		return err
 	}
+	fmt.Println("**** REQUEST HEAD => ", uri)
 	return nil
 }
 
@@ -106,11 +114,8 @@ func (c *Controller) download(link, filename string) error {
 	return nil
 }
 
-func DownloadHashed(root, hash string, size int64) {
+func DownloadHashed(c *Controller, hash string, size int64) {
 	var params = make(url.Values)
-	c.RootFolder = root
-	c.DefaultLanguage = "eng"
-	c.Filter = false
 	params.Add("moviebytesize", fmt.Sprint(size))
 	params.Add("moviehash", hash)
 	err := c.osbRequest(http.MethodGet, params)
@@ -125,6 +130,55 @@ func DownloadHashed(root, hash string, size int64) {
 		}
 		fmt.Printf("File %s downloaded successfully.\n", c.Subtitles[i].FileName)
 	}
+}
+
+func DownloadQuery(c *Controller, params url.Values) {
+	err := c.osbRequest(http.MethodGet, params)
+	if err != nil {
+		panic(err) // raising a flag
+	}
+	for i := range c.Subtitles {
+		fmt.Printf("[%d] Subtitle: %s\nRating: %s - Language: %s/%s\n",
+			i,
+			c.Subtitles[i].FileName,
+			c.Subtitles[i].Rating,
+			c.Subtitles[i].LanguageID,
+			c.Subtitles[i].LanguageName,
+		)
+	}
+	var ss string
+	var reader = bufio.NewReader(in)
+	fmt.Println("\n-------------------------------\nSELECT SUBTITLES TO DOWNLOAD BY NUMBER:\n(Enter 'd' to end task or 'c' to cancel)\n-------------------------------")
+	for {
+		fmt.Print("-> ")
+		ss, _ = reader.ReadString('\n')
+		ss = strings.TrimSpace(strings.Replace(ss, "\n", "", -1))
+		if ss == "d" {
+			break
+		}
+		if ss == "c" {
+			fmt.Println("Task canceled.")
+			return
+		}
+
+		n, err := strconv.Atoi(ss)
+		if err != nil {
+			fmt.Println("Invalid number")
+			continue
+		}
+		if n > len(c.Subtitles) {
+			fmt.Println("Invalid subtitle")
+			continue
+		}
+		go func(s Subtitle) {
+			fmt.Printf("Starting to download %s...\n-> ", s.FileName)
+			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
+				fmt.Printf("Error while downloading: %s\n-> ", gerr.Error())
+				return
+			}
+		}(c.Subtitles[n])
+	}
+	fmt.Println("Everything worked out... cya ;)")
 }
 
 func HashFile(file *os.File) (hash string, size int64, err error) {
