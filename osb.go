@@ -51,7 +51,7 @@ func encodeOSB(e Encoder) string {
 }
 
 func (c *Controller) osbRequest(method string, params url.Values) error {
-	if len(c.MultiLanguage) == 0 {
+	if c.MultiLanguage == nil {
 		params.Add("sublanguageid", c.DefaultLanguage)
 	}
 	uri += encodeOSB(params)

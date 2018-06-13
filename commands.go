@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -20,8 +21,7 @@ func main() {
 	copyCommand := flag.NewFlagSet("copy", flag.ExitOnError)
 	deleteCommand := flag.NewFlagSet("delete", flag.ExitOnError)
 	categorizeCommand := flag.NewFlagSet("categorize", flag.ExitOnError)
-
-	//queryCommand := flag.NewFlagSet("query", flag.ExitOnError)
+	queryCommand := flag.NewFlagSet("query", flag.ExitOnError)
 	downloadCommand := flag.NewFlagSet("download", flag.ExitOnError)
 
 	// Copy subcommand flags
@@ -36,7 +36,13 @@ func main() {
 	categorizeSrc := categorizeCommand.String("src", "", "Defines source folder to organize.")
 	categorizeDst := categorizeCommand.String("dst", "", "Defines destine folder to organize.")
 	// Query subcommand flags
-
+	queryPath := queryCommand.String("path", "", "Defines root to save the downloaded subtitles.")
+	queryName := queryCommand.String("name", "", "Defines query's name.")
+	querySeason := queryCommand.String("season", "", "Defines query's season.")
+	queryEpisode := queryCommand.String("episode", "", "Defines query's episode.")
+	queryLang := queryCommand.String("lang", "eng", "Defines default language.")
+	queryMLang := queryCommand.String("multi", "", "Defines multiples languages. (Sep by comma)")
+	queryScore := queryCommand.Int("score", 0, "Defines rating score for subtitles.")
 	// Download subcommand flags
 	downloadPath := downloadCommand.String("path", "", "Defines root file's folder.")
 	downloadLang := downloadCommand.String("lang", "eng", "Defines default language to download subtitles.")
@@ -62,6 +68,9 @@ func main() {
 	case "download":
 		fmt.Println("Download task choosed.")
 		downloadCommand.Parse(os.Args[2:])
+	case "query":
+		fmt.Println("Search Query task choosed.")
+		queryCommand.Parse(os.Args[2:])
 	default:
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -111,9 +120,36 @@ func main() {
 		c := Controller{
 			RootFolder:      *downloadPath,
 			DefaultLanguage: *downloadLang,
-			MultiLanguage:   SliceString(*downloadMLang),
 			RatingScore:     *downloadScore,
 		}
+		if *downloadMLang != "" {
+			c.MultiLanguage = SliceString(*downloadMLang)
+		}
 		GetHashFiles(&c, *downloadPath, PullDir)
+	}
+
+	// Handle QueryCommand flags
+	if queryCommand.Parsed() {
+		if *queryPath == "" && *queryName == "" {
+			queryCommand.PrintDefaults()
+			os.Exit(1)
+		}
+		c := Controller{
+			RootFolder:      *queryPath,
+			DefaultLanguage: *queryLang,
+			RatingScore:     *queryScore,
+		}
+		if *queryMLang != "" {
+			c.MultiLanguage = SliceString(*queryMLang)
+		}
+		params := url.Values{}
+		params.Add("query", *queryName)
+		if *querySeason != "" {
+			params.Add("season", *querySeason)
+		}
+		if *queryEpisode != "" {
+			params.Add("episode", *queryEpisode)
+		}
+		DownloadQuery(&c, params)
 	}
 }
