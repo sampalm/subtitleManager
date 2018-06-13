@@ -181,7 +181,28 @@ func DownloadQuery(c *Controller, params url.Values) {
 	fmt.Println("Everything worked out... cya ;)")
 }
 
-func HashFile(file *os.File) (hash string, size int64, err error) {
+func GetHashFiles(c *Controller, path string, p PullFiles) {
+	var fl []File
+	exts = map[string]bool{".mp4": true, ".mkv": true, ".avi": true, ".wmv": true}
+	if err := p(path, "", &fl); err != nil {
+		panic(err)
+	}
+	for _, f := range fl {
+		file, err := os.Open(f.Name)
+		if err != nil {
+			fmt.Printf("Could not open file %s: %s\n", f.Name, err.Error())
+			continue
+		}
+		hash, size, err := hashFile(file)
+		if err != nil {
+			fmt.Printf("Could not hash file %s: %s\n", f.Name, err.Error())
+			continue
+		}
+		DownloadHashed(c, hash, size)
+	}
+}
+
+func hashFile(file *os.File) (hash string, size int64, err error) {
 	defer file.Close()
 	fi, err := file.Stat()
 	if err != nil {
