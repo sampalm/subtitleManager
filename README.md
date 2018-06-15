@@ -19,38 +19,39 @@ Or you also can download the executable version **[Outdated]**.
 To use the application you must use flags to define directories and different functions of the application. For more information use `-help` tag to see a set of instructions explaining the main functions of the application and of each flag or option. You can also combine different flags and options to make multiples task at once, but there are an rank of priority which application uses to execute it fuction, see more information below.
 
 ### Usage:
-`subtitlemanager [flags] [options...]`
+`subtitlemanager command -subcommands...`
 
-#### Base Flag
-* -p `Set your root path. (Required)`
-* -e `Set subtitle extension.`
-* -v `Set subtitle version.` 
-* -help `Show all flags and options that are available to use.` 
+#### Copy Subcommands
+* -src `Set your root path.`
+* -dst `Set a path to copy the files.`
+* -only `Only will copy files inside root path, ignoring all subfolders` 
 
-#### Download Subtitle
-* -dd `Download subtitles to all found files inside your root path.`
-    * -rate `Defines the minimum rating.`
-    * -lang `Defines the language. (Default: English/eng)`
-        - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
-    * -mlang `Defines multiple languages.`
-    * -force `Ignores all confirm messages.`
-    * -sl `Allow you to choose only one subtitle to download.`
-#### Search Subtitles
-* -search `Set search mode on which enable search options.`
-    * -sn `Defines the name to search.` 
-    * -ss `Defines the season to search.`
-    * -se `Defines the episode to search. (Require -ss flag)`
-    * -force `Ignores all confirm messages.`
-#### Manage your Subtitles
-* -org `Organize all subtitles by title and season if exists.`
-* -move `Move all subtitles to this path.`
-* -d `Delete all files inside your root path.`
-* -only `Execute all tasks only into your root path, will ignore all subfolders.`
+#### Delete Subcommands
+* -path `Set path which have the files that you want to delete.`
+* -ignore `Will ignore all files inside this path.`
+* -only `Only will delete files inside path, ignoring all subfolders`  
 
+#### Categorize Subcommands
+* -src `Set your root path.`
+* -dst `Set path to where your files will be moved and categorized.`
 
-#### Combining flags:
-You can combine flags to perform restricted or concise tasks in this application, the main thing you need to know before use this method is the raking of priorities that the application use to execute the flags.
-	
+#### Download Subcommands
+* -path `Defines the path where your files are.`
+* -score `Defines the minimum rating.`
+* -lang `Defines the language. (Default: 'eng')`
+    - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
+* -multi `Defines multiple languages.`
+
+#### Query Subcommands
+* -path `Defines the path to save all downloaded subtitles.`
+* -name `Defines query's name.`
+* -season `Defines query's season.`
+* -episode `Defines query's episode.`
+* -score `Defines a minimum rating.`
+* -lang `Defines the language. (Default: 'eng')`
+    - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
+* -multi `Defines multiple languages.`
+
 ### Additional:
 If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
 	
