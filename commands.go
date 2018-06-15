@@ -12,8 +12,12 @@ import (
 var in io.Reader = os.Stdin
 var c = Controller{}
 
-func SliceString(value string) []string {
-	return strings.Split(strings.TrimSpace(value), ",")
+func MapString(value string) mapLang {
+	ml := mapLang{}
+	for _, str := range strings.Split(strings.TrimSpace(value), ",") {
+		ml[str] = true
+	}
+	return ml
 }
 
 func main() {
@@ -123,14 +127,14 @@ func main() {
 			RatingScore:     *downloadScore,
 		}
 		if *downloadMLang != "" {
-			c.MultiLanguage = SliceString(*downloadMLang)
+			c.MultiLanguage = MapString(*downloadMLang)
 		}
 		GetHashFiles(&c, *downloadPath, PullDir)
 	}
 
 	// Handle QueryCommand flags
 	if queryCommand.Parsed() {
-		if *queryPath == "" && *queryName == "" {
+		if *queryPath == "" || *queryName == "" {
 			queryCommand.PrintDefaults()
 			os.Exit(1)
 		}
@@ -140,7 +144,7 @@ func main() {
 			RatingScore:     *queryScore,
 		}
 		if *queryMLang != "" {
-			c.MultiLanguage = SliceString(*queryMLang)
+			c.MultiLanguage = MapString(*queryMLang)
 		}
 		params := url.Values{}
 		params.Add("query", *queryName)

@@ -14,13 +14,16 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 )
+
+type mapLang map[string]bool
 
 type Controller struct {
 	RootFolder      string
 	DefaultLanguage string
-	MultiLanguage   []string
+	MultiLanguage   mapLang
 	RatingScore     int
 	Filter          bool
 	Subtitles       []Subtitle
@@ -43,6 +46,7 @@ const chunkSize = 65536
 
 var client = &http.Client{}
 var uri = "https://rest.opensubtitles.org/search/"
+var wg sync.WaitGroup
 
 func encodeOSB(e Encoder) string {
 	es := e.Encode()
@@ -114,30 +118,19 @@ func (c *Controller) download(link, filename string) error {
 	return nil
 }
 
-func DownloadHashed(c *Controller, hash string, size int64) {
-	var params = make(url.Values)
-	params.Add("moviebytesize", fmt.Sprint(size))
-	params.Add("moviehash", hash)
-	err := c.osbRequest(http.MethodGet, params)
-	if err != nil {
-		panic(err) // raising a flag
-	}
+func (c *Controller) downloadFilter() {
 	for i := range c.Subtitles {
-		err := c.download(c.Subtitles[i].DownloadLink, c.Subtitles[i].FileName)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		if c.RatingScore > 0 {
+			fn, _ := strconv.ParseFloat(c.Subtitles[i].Rating, 64)
+			if fn < float64(c.RatingScore) {
+				continue
+			}
 		}
-		fmt.Printf("File %s downloaded successfully.\n", c.Subtitles[i].FileName)
-	}
-}
-
-func DownloadQuery(c *Controller, params url.Values) {
-	err := c.osbRequest(http.MethodGet, params)
-	if err != nil {
-		panic(err) // raising a flag
-	}
-	for i := range c.Subtitles {
+		if c.MultiLanguage != nil {
+			if ok := c.MultiLanguage[c.Subtitles[i].LanguageID]; !ok {
+				continue
+			}
+		}
 		fmt.Printf("[%d] Subtitle: %s\nRating: %s - Language: %s/%s\n",
 			i,
 			c.Subtitles[i].FileName,
@@ -146,6 +139,7 @@ func DownloadQuery(c *Controller, params url.Values) {
 			c.Subtitles[i].LanguageName,
 		)
 	}
+
 	var ss string
 	var reader = bufio.NewReader(in)
 	fmt.Println("\n-------------------------------\nSELECT SUBTITLES TO DOWNLOAD BY NUMBER:\n(Enter 'd' to end task or 'c' to cancel)\n-------------------------------")
@@ -154,7 +148,7 @@ func DownloadQuery(c *Controller, params url.Values) {
 		ss, _ = reader.ReadString('\n')
 		ss = strings.TrimSpace(strings.Replace(ss, "\n", "", -1))
 		if ss == "d" {
-			break
+			return
 		}
 		if ss == "c" {
 			fmt.Println("Task canceled.")
@@ -166,18 +160,55 @@ func DownloadQuery(c *Controller, params url.Values) {
 			fmt.Println("Invalid number")
 			continue
 		}
-		if n > len(c.Subtitles) {
+		if n > len(c.Subtitles)-1 {
 			fmt.Println("Invalid subtitle")
 			continue
 		}
 		go func(s Subtitle) {
+			wg.Add(1)
+			defer wg.Done()
 			fmt.Printf("Starting to download %s...\n-> ", s.FileName)
 			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
 				fmt.Printf("Error while downloading: %s\n-> ", gerr.Error())
 				return
 			}
+			fmt.Printf("Subtitle %s downloaded.\n-> ", s.FileName)
 		}(c.Subtitles[n])
 	}
+}
+
+func DownloadHashed(c *Controller, hash string, size int64) {
+	// Check source dir
+	if _, err := os.Stat(c.RootFolder); os.IsNotExist(err) {
+		if err = os.MkdirAll(c.RootFolder, os.ModePerm); err != nil {
+			panic(err)
+		}
+	}
+	var params = make(url.Values)
+	params.Add("moviebytesize", fmt.Sprint(size))
+	params.Add("moviehash", hash)
+	err := c.osbRequest(http.MethodGet, params)
+	if err != nil {
+		panic(err) // raising a flag
+	}
+	c.downloadFilter()
+	wg.Wait()
+	fmt.Println("Everything worked out... cya ;)")
+}
+
+func DownloadQuery(c *Controller, params url.Values) {
+	// Check source dir
+	if _, err := os.Stat(c.RootFolder); os.IsNotExist(err) {
+		if err = os.MkdirAll(c.RootFolder, os.ModePerm); err != nil {
+			panic(err)
+		}
+	}
+	err := c.osbRequest(http.MethodGet, params)
+	if err != nil {
+		panic(err) // raising a flag
+	}
+	c.downloadFilter()
+	wg.Wait()
 	fmt.Println("Everything worked out... cya ;)")
 }
 
