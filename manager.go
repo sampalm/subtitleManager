@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"syscall"
 )
@@ -64,26 +66,41 @@ func PullTreeDir(root, ignore string, fl *[]File) error {
 
 func PullDir(root, ignore string, fl *[]File) error {
 	ignore = filepath.Join(ignore)
-	m, _ := filepath.Glob(filepath.Join(root, "*"))
+	f, err := os.Open(root)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// get all files from dir
+	m, err := f.Readdirnames(-1)
+	f.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sort.Strings(m)
 	for i := range m {
-		d, err := os.Lstat(m[i])
+		p := filepath.Join(root, m[i])
+		d, err := os.Lstat(p)
 		if err != nil {
 			return err
 		}
 		// Trying to copy all files to nowhere ?
-		if filepath.Dir(m[i]) == ignore {
+		if filepath.Dir(p) == ignore {
 			continue
 		}
 		// Check for valid extensions
-		if _, ok := exts[filepath.Ext(m[i])]; !ok {
+		if _, ok := exts[filepath.Ext(p)]; !ok {
 			continue
 		}
 		f := File{
 			Name: d.Name(),
-			Path: m[i],
-			Ext:  filepath.Ext(m[i]),
+			Path: p,
+			Ext:  filepath.Ext(p),
 		}
 		*fl = append(*fl, f)
+	}
+	if len(*fl) == 0 {
+		fmt.Println("None files found!")
+		os.Exit(0)
 	}
 	return nil
 }
