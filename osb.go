@@ -219,7 +219,7 @@ func GetHashFiles(c *Controller, path string, p PullFiles) {
 		panic(err)
 	}
 	for _, f := range fl {
-		file, err := os.Open(f.Name)
+		file, err := os.Open(filepath.Join(f.Path))
 		if err != nil {
 			fmt.Printf("Could not open file %s: %s\n", f.Name, err.Error())
 			continue
