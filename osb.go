@@ -45,7 +45,6 @@ type Encoder interface {
 const chunkSize = 65536
 
 var client = &http.Client{}
-var uri = "https://rest.opensubtitles.org/search/"
 var wg sync.WaitGroup
 
 func encodeOSB(e Encoder) string {
@@ -58,11 +57,10 @@ func (c *Controller) osbRequest(method string, params url.Values) error {
 	if c.MultiLanguage == nil {
 		params.Add("sublanguageid", c.DefaultLanguage)
 	}
-	uri += encodeOSB(params)
-
+	uri := fmt.Sprint("https://rest.opensubtitles.org/search/", encodeOSB(params))
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("NewRequest error -> %v", err)
 	}
 	req.Header.Set("User-Agent", "TemporaryUserAgent")
 	req.Header.Set("Content-Type", "application/json")
@@ -73,9 +71,15 @@ func (c *Controller) osbRequest(method string, params url.Values) error {
 	}
 	defer res.Body.Close()
 
+	// b, err := ioutil.ReadAll(res.Body)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("request response:\n %s\n", string(b))
+
 	err = json.NewDecoder(res.Body).Decode(&c.Subtitles)
 	if err != nil {
-		return err
+		return fmt.Errorf("NewDecoder error -> %v", err)
 	}
 	fmt.Println("**** REQUEST HEAD => ", uri)
 	return nil
@@ -119,6 +123,11 @@ func (c *Controller) download(link, filename string) error {
 }
 
 func (c *Controller) downloadFilter() {
+	if len(c.Subtitles) == 0 {
+		fmt.Println("**** No subtitles was found!")
+		os.Exit(0)
+	}
+	fmt.Printf("\n**** LIST OF SUBTITLES FOUND: ****\n")
 	for i := range c.Subtitles {
 		if c.RatingScore > 0 {
 			fn, _ := strconv.ParseFloat(c.Subtitles[i].Rating, 64)
@@ -151,17 +160,17 @@ func (c *Controller) downloadFilter() {
 			return
 		}
 		if ss == "c" {
-			fmt.Println("Task canceled.")
-			return
+			fmt.Println("**** Task canceled.")
+			os.Exit(0)
 		}
 
 		n, err := strconv.Atoi(ss)
 		if err != nil {
-			fmt.Println("Invalid number")
+			fmt.Println("**** Invalid number")
 			continue
 		}
 		if n > len(c.Subtitles)-1 {
-			fmt.Println("Invalid subtitle")
+			fmt.Println("**** Invalid subtitle")
 			continue
 		}
 		go func(s Subtitle) {
@@ -184,9 +193,9 @@ func DownloadHashed(c *Controller, hash string, size int64) {
 			panic(err)
 		}
 	}
-	var params = make(url.Values)
-	params.Add("moviebytesize", fmt.Sprint(size))
-	params.Add("moviehash", hash)
+	params := make(url.Values)
+	params.Set("moviebytesize", fmt.Sprint(size))
+	params.Set("moviehash", hash)
 	err := c.osbRequest(http.MethodGet, params)
 	if err != nil {
 		panic(err) // raising a flag
@@ -229,6 +238,7 @@ func GetHashFiles(c *Controller, path string, p PullFiles) {
 			fmt.Printf("Could not hash file %s: %s\n", f.Name, err.Error())
 			continue
 		}
+		fmt.Println("**** QUEUE => ", f.Name, " HashFile: ", hash)
 		DownloadHashed(c, hash, size)
 	}
 }
