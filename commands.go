@@ -60,24 +60,28 @@ func main() {
 
 	// Select the subcommand
 	switch os.Args[1] {
-	case "copy":
+	case "copy", "c":
 		fmt.Println("Copy task choosed.")
 		copyCommand.Parse(os.Args[2:])
-	case "delete":
+	case "delete", "dl":
 		fmt.Println("Delete task choosed.")
 		deleteCommand.Parse(os.Args[2:])
-	case "categorize":
+	case "categorize", "ct":
 		fmt.Println("Categorize task choosed.")
 		categorizeCommand.Parse(os.Args[2:])
-	case "download":
+	case "download", "d":
 		fmt.Println("Download task choosed.")
 		downloadCommand.Parse(os.Args[2:])
-	case "query":
+	case "query", "q":
 		fmt.Println("Search Query task choosed.")
 		queryCommand.Parse(os.Args[2:])
+	case "help", "h":
+		fmt.Println("Help command choosed.")
+		fmt.Printf("\n[subtitleManager command subcommands...]\n\n*** Commands:\n\tcopy, c\n\tdelete, dl\n\tcategorize, ct\n\tdownload, d\n\tquery, q\n*** Subcomands:\nUse [subtitleManager command] to show all subcommands from that command.")
+		os.Exit(0)
 	default:
 		flag.PrintDefaults()
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// Handle CopyCommand flags
