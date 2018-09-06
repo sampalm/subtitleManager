@@ -60,7 +60,7 @@ func (c *Controller) osbRequest(method string, params url.Values) error {
 	uri := fmt.Sprint("https://rest.opensubtitles.org/search/", encodeOSB(params))
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
-		return fmt.Errorf("NewRequest error -> %v", err)
+		return fmt.Errorf("NewRequest error -> %s", err)
 	}
 	req.Header.Set("User-Agent", "TemporaryUserAgent")
 	req.Header.Set("Content-Type", "application/json")
@@ -117,7 +117,7 @@ func (c *Controller) download(link, filename string) error {
 		}
 	}()
 	if _, err := io.Copy(file, b); err != nil {
-		return fmt.Errorf("Could't download your file. Err: %s", err.Error())
+		return fmt.Errorf("Could't download your file. Err: %v", err.Error())
 	}
 	return nil
 }

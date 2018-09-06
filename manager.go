@@ -134,9 +134,9 @@ func pullPath(folder []string, fl *[]File) error {
 func regexSplit(filename string, info *Info) { // Raising a flag
 	s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(filename)
 	info.Title = strings.TrimSpace(strings.Replace(strings.Split(filename, s)[0], ".", " ", -1))
-	ss := regexp.MustCompile(`[a-zA-Z]([0-9]{2}\D+)`).FindString(s)
-	if ss != "" {
-		info.Season = "Season " + strings.SplitAfter(s, ss)[1]
+	ss := regexp.MustCompile(`([.][a-zA-Z]([0-9]{2}))`).FindStringSubmatch(s)
+	if ss != nil {
+		info.Season = "Season " + ss[2]
 	}
 }
 
