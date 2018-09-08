@@ -39,6 +39,8 @@ To use the application you must use flags to define directories and different fu
 * -lang `Defines the language. (Default: 'eng')`
     - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
 * -multi `Defines multiple languages.`
+* -scan `It scans the folder and download the subtitles of all the files that it finds.`
+* -max `Sets the maximum download queue.`
 
 #### Query Subcommands
 * -path `Defines the path to save all downloaded subtitles.`
