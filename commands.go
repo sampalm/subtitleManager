@@ -52,6 +52,8 @@ func main() {
 	downloadLang := downloadCommand.String("lang", "eng", "Defines default language to download subtitles.")
 	downloadMLang := downloadCommand.String("multi", "", "Defines multiples languages. (Sep by comma)")
 	downloadScore := downloadCommand.Int("score", 0, "Defines rating score for subtitles.")
+	downloadScan := downloadCommand.Bool("scan", false, "Scans and downloads all subtitles.")
+	downloadMaxQueue := downloadCommand.Int("max", 4, "Sets the maximum download limit.")
 	// Check that subcommand has been provided
 	if len(os.Args) < 2 {
 		fmt.Println("You must provide a command task.")
@@ -125,7 +127,7 @@ func main() {
 			downloadCommand.PrintDefaults()
 			os.Exit(1)
 		}
-		c := Controller{
+		c := &Controller{
 			RootFolder:      *downloadPath,
 			DefaultLanguage: *downloadLang,
 			RatingScore:     *downloadScore,
@@ -133,7 +135,13 @@ func main() {
 		if *downloadMLang != "" {
 			c.MultiLanguage = MapString(*downloadMLang)
 		}
-		GetHashFiles(&c, *downloadPath, PullDir)
+		if *downloadScan {
+			c.ScanFolder = true
+			c.QueueMax = *downloadMaxQueue
+			GetHashFiles(c, *downloadPath, PullTreeDir)
+			return
+		}
+		GetHashFiles(c, *downloadPath, PullDir)
 	}
 
 	// Handle QueryCommand flags
@@ -142,7 +150,7 @@ func main() {
 			queryCommand.PrintDefaults()
 			os.Exit(1)
 		}
-		c := Controller{
+		c := &Controller{
 			RootFolder:      *queryPath,
 			DefaultLanguage: *queryLang,
 			RatingScore:     *queryScore,
@@ -158,6 +166,6 @@ func main() {
 		if *queryEpisode != "" {
 			params.Add("episode", *queryEpisode)
 		}
-		DownloadQuery(&c, params)
+		DownloadQuery(c, params)
 	}
 }
