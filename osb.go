@@ -27,6 +27,8 @@ type Controller struct {
 	RatingScore     int
 	Filter          bool
 	Subtitles       []Subtitle
+	ScanFolder      bool
+	QueueMax        int
 	*http.Client
 }
 
@@ -70,12 +72,6 @@ func (c *Controller) osbRequest(method string, params url.Values) error {
 		panic(err) // FATAL ERROR - TRY TO RECOVER ?
 	}
 	defer res.Body.Close()
-
-	// b, err := ioutil.ReadAll(res.Body)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Printf("request response:\n %s\n", string(b))
 
 	err = json.NewDecoder(res.Body).Decode(&c.Subtitles)
 	if err != nil {
@@ -186,6 +182,34 @@ func (c *Controller) downloadFilter() {
 	}
 }
 
+func (c *Controller) downloadScanner(hash string) {
+	n := 0
+	queue := c.QueueMax
+	if len(c.Subtitles) == 0 {
+		fmt.Printf("**** No subtitles for %s was found!\n", hash)
+		return
+	}
+	if len(c.Subtitles) < queue {
+		queue = len(c.Subtitles)
+	}
+	fmt.Printf("Subtitles Found: %d\tIn Queue: %d\n", len(c.Subtitles), queue)
+	wg.Add(queue)
+	for n < queue {
+		go func(s Subtitle) {
+			defer wg.Done()
+			fmt.Printf("Starting to download %s...\n-> ", s.FileName)
+			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
+				fmt.Printf("Error while downloading: %s\n-> ", gerr.Error())
+				return
+			}
+			fmt.Printf("Subtitle %s downloaded.\n-> ", s.FileName)
+		}(c.Subtitles[n])
+		n++
+	}
+	wg.Wait()
+	fmt.Println("Everything worked out... cya ;)")
+}
+
 func DownloadHashed(c *Controller, hash string, size int64) {
 	// Check source dir
 	if _, err := os.Stat(c.RootFolder); os.IsNotExist(err) {
@@ -199,6 +223,10 @@ func DownloadHashed(c *Controller, hash string, size int64) {
 	err := c.osbRequest(http.MethodGet, params)
 	if err != nil {
 		panic(err) // raising a flag
+	}
+	if c.ScanFolder {
+		c.downloadScanner(hash)
+		return
 	}
 	c.downloadFilter()
 	wg.Wait()
@@ -237,6 +265,9 @@ func GetHashFiles(c *Controller, path string, p PullFiles) {
 		if err != nil {
 			fmt.Printf("Could not hash file %s: %s\n", f.Name, err.Error())
 			continue
+		}
+		if c.ScanFolder {
+			c.RootFolder = filepath.Dir(f.Path)
 		}
 		fmt.Println("**** QUEUE => ", f.Name, " HashFile: ", hash)
 		DownloadHashed(c, hash, size)
