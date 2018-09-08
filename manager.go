@@ -112,7 +112,7 @@ func pullPath(folder []string, fl *[]File) error {
 			return err
 		}
 		if d.IsDir() {
-			path, _ := filepath.Glob(filepath.Join(folder[i], "*"))
+			path, _ := globDir(folder[i])
 			pullPath(path, fl)
 			continue
 		}
@@ -131,6 +131,25 @@ func pullPath(folder []string, fl *[]File) error {
 	return nil
 }
 
+func globDir(address string) ([]string, error) {
+	f, err := os.Open(address)
+	if err != nil {
+		return nil, fmt.Errorf("Open returns -> %s", err)
+	}
+	// get all files from dir
+	m, err := f.Readdirnames(-1)
+	f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Readdirnames returns -> %s", err)
+	}
+	// get full address
+	for i := 0; i < len(m); i++ {
+		m[i] = filepath.Join(address, m[i])
+	}
+	sort.Strings(m)
+	return m, nil
+}
+
 func regexSplit(filename string, info *Info) { // Raising a flag
 	s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(filename)
 	info.Title = strings.TrimSpace(strings.Replace(strings.Split(filename, s)[0], ".", " ", -1))
@@ -141,7 +160,7 @@ func regexSplit(filename string, info *Info) { // Raising a flag
 }
 
 func PullCategorized(root, ignore string, fl *[]File) error {
-	m, _ := filepath.Glob(filepath.Join(root, "*"))
+	m, _ := globDir(root)
 	if err := pullPath(m, fl); err != nil {
 		return err
 	}
@@ -294,4 +313,5 @@ func Categorize(dst, src string, p PullFiles) {
 			return
 		}
 	}
+	fmt.Println("Everything worked out... cya ;)")
 }
