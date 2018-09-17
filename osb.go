@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,12 +19,12 @@ import (
 	"syscall"
 )
 
-type mapLang map[string]bool
+// type mapLang map[string]bool
 
 type Controller struct {
 	RootFolder      string
 	DefaultLanguage string
-	MultiLanguage   mapLang
+	MultiLanguage   map[string]bool
 	RatingScore     int
 	Filter          bool
 	Subtitles       []Subtitle
@@ -120,8 +121,7 @@ func (c *Controller) download(link, filename string) error {
 
 func (c *Controller) downloadFilter() {
 	if len(c.Subtitles) == 0 {
-		fmt.Println("**** No subtitles was found!")
-		os.Exit(0)
+		log.Fatalln("**** No subtitles was found!")
 	}
 	fmt.Printf("\n**** LIST OF SUBTITLES FOUND: ****\n")
 	for i := range c.Subtitles {
@@ -146,7 +146,7 @@ func (c *Controller) downloadFilter() {
 	}
 
 	var ss string
-	var reader = bufio.NewReader(in)
+	var reader = bufio.NewReader(os.Stdin)
 	fmt.Println("\n-------------------------------\nSELECT SUBTITLES TO DOWNLOAD BY NUMBER:\n(Enter 'd' to end task or 'c' to cancel)\n-------------------------------")
 	for {
 		fmt.Print("-> ")
@@ -156,8 +156,7 @@ func (c *Controller) downloadFilter() {
 			return
 		}
 		if ss == "c" {
-			fmt.Println("**** Task canceled.")
-			os.Exit(0)
+			log.Fatalln("**** Task canceled.")
 		}
 
 		n, err := strconv.Atoi(ss)
@@ -186,20 +185,20 @@ func (c *Controller) downloadScanner(hash string) {
 	n := 0
 	queue := c.QueueMax
 	if len(c.Subtitles) == 0 {
-		fmt.Printf("**** No subtitles for %s was found!\n", hash)
+		log.Printf("**** No subtitles for %s was found!\n", hash)
 		return
 	}
 	if len(c.Subtitles) < queue {
 		queue = len(c.Subtitles)
 	}
-	fmt.Printf("Subtitles Found: %d\tIn Queue: %d\n", len(c.Subtitles), queue)
+	log.Printf("Subtitles Found: %d\tIn Queue: %d\n", len(c.Subtitles), queue)
 	wg.Add(queue)
 	for n < queue {
 		go func(s Subtitle) {
 			defer wg.Done()
-			fmt.Printf("Starting to download %s...\n-> ", s.FileName)
+			log.Printf("Starting to download %s...\n-> ", s.FileName)
 			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
-				fmt.Printf("Error while downloading: %s\n-> ", gerr.Error())
+				log.Printf("Error while downloading: %s\n-> ", gerr.Error())
 				return
 			}
 			fmt.Printf("Subtitle %s downloaded.\n-> ", s.FileName)
@@ -258,18 +257,18 @@ func GetHashFiles(c *Controller, path string, p PullFiles) {
 	for _, f := range fl {
 		file, err := os.Open(filepath.Join(f.Path))
 		if err != nil {
-			fmt.Printf("Could not open file %s: %s\n", f.Name, err.Error())
+			log.Println("Could not open file %s: %s\n", f.Name, err.Error())
 			continue
 		}
 		hash, size, err := hashFile(file)
 		if err != nil {
-			fmt.Printf("Could not hash file %s: %s\n", f.Name, err.Error())
+			log.Println("Could not hash file %s: %s\n", f.Name, err.Error())
 			continue
 		}
 		if c.ScanFolder {
 			c.RootFolder = filepath.Dir(f.Path)
 		}
-		fmt.Println("**** QUEUE => ", f.Name, " HashFile: ", hash)
+		log.Println("**** QUEUE => ", f.Name, " HashFile: ", hash)
 		DownloadHashed(c, hash, size)
 	}
 }
