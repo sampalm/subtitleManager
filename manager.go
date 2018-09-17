@@ -99,8 +99,7 @@ func PullDir(root, ignore string, fl *[]File) error {
 		*fl = append(*fl, f)
 	}
 	if len(*fl) == 0 {
-		fmt.Println("None files found!")
-		os.Exit(0)
+		log.Fatalln("None files found!")
 	}
 	return nil
 }
@@ -233,22 +232,22 @@ func MoveFiles(dst, src string, p PullFiles) {
 	for _, f := range fl {
 		// PullOut files
 		dst := filepath.Join(dst, f.Name)
-		fmt.Printf("Creating File: %s\n", f.Name)
+		log.Printf("Creating File: %s\n", f.Name)
 		bw, err := PullOut(dst, f.Path)
 		if err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("MovileFiles => ", err)
 			return
 		}
-		fmt.Println("File created, bytes written: ", bw)
+		log.Println("File created, bytes written: ", bw)
 	}
 }
 
-func delete(fl []File) error {
+func remove(fl []File) error {
 	dl := map[string]bool{}
 	for i := range fl {
 		if _, ok := dl[filepath.Dir(fl[i].Path)]; !ok {
 			dl[filepath.Dir(fl[i].Path)] = true
-			fmt.Printf("Folder %s cleaned.\n", filepath.Dir(fl[i].Path))
+			log.Printf("Folder %s cleaned.\n", filepath.Dir(fl[i].Path))
 		}
 		if err := os.RemoveAll(fl[i].Path); err != nil {
 			return err
@@ -257,10 +256,10 @@ func delete(fl []File) error {
 	return nil
 }
 
-func deleteFile(path string, log map[string]bool) error {
-	if _, ok := log[filepath.Dir(path)]; !ok {
-		log[filepath.Dir(path)] = true
-		fmt.Printf("Cleaning %s folder.\n", filepath.Dir(path))
+func deleteFile(path string, stack map[string]bool) error {
+	if _, ok := stack[filepath.Dir(path)]; !ok {
+		stack[filepath.Dir(path)] = true
+		log.Printf("Cleaning %s folder.\n", filepath.Dir(path))
 	}
 	if err := os.Remove(path); err != nil {
 		return err
@@ -276,7 +275,7 @@ func DeleteFolder(path, ignore string, p PullFiles) {
 	if len(fl) == 0 {
 		return
 	}
-	if cerr := delete(fl); cerr != nil {
+	if cerr := remove(fl); cerr != nil {
 		panic(cerr) // raising a flag
 	}
 }
@@ -301,15 +300,15 @@ func Categorize(dst, src string, p PullFiles) {
 				panic(err)
 			}
 		}
-		fmt.Printf("Creating File: %s\n", fp)
+		log.Printf("Creating File: %s\n", fp)
 		bw, err := PullOut(fp, f.Path)
 		if err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("Error occurs: ", err)
 			return
 		}
-		fmt.Println("File created, bytes written: ", bw)
+		log.Println("File created, bytes written: ", bw)
 		if err := deleteFile(f.Path, dl); err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("Error occurs: ", err)
 			return
 		}
 	}
