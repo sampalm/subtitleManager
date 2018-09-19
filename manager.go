@@ -14,8 +14,6 @@ import (
 
 const bufSize = 4 * 1024 * 1024
 
-var exts = map[string]bool{".srt": true, ".sub": true, ".sbv": true}
-
 type File struct {
 	Name string
 	Path string
@@ -31,6 +29,7 @@ type Info struct {
 type PullFiles func(root, ignore string, fl *[]File) error
 
 func crawler(ignore string, fl *[]File) filepath.WalkFunc {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -42,7 +41,6 @@ func crawler(ignore string, fl *[]File) filepath.WalkFunc {
 			}
 			return nil
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(path)]; !ok {
 			return nil
 		}
@@ -65,12 +63,13 @@ func PullTreeDir(root, ignore string, fl *[]File) error {
 }
 
 func PullDir(root, ignore string, fl *[]File) error {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	f, err := os.Open(root)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// get all files from dir
+	// get all the files from dir
 	m, err := f.Readdirnames(-1)
 	f.Close()
 	if err != nil {
@@ -83,11 +82,9 @@ func PullDir(root, ignore string, fl *[]File) error {
 		if err != nil {
 			return err
 		}
-		// Trying to copy all files to nowhere ?
 		if filepath.Dir(p) == ignore {
 			continue
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(p)]; !ok {
 			continue
 		}
@@ -105,6 +102,7 @@ func PullDir(root, ignore string, fl *[]File) error {
 }
 
 func pullPath(folder []string, fl *[]File) error {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	for i := range folder {
 		d, err := os.Lstat(folder[i])
 		if err != nil {
@@ -115,7 +113,6 @@ func pullPath(folder []string, fl *[]File) error {
 			pullPath(path, fl)
 			continue
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(d.Name())]; !ok {
 			continue
 		}
@@ -135,13 +132,13 @@ func globDir(address string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Open returns -> %s", err)
 	}
-	// get all files from dir
+	// get all the files from dir.
 	m, err := f.Readdirnames(-1)
 	f.Close()
 	if err != nil {
 		return nil, fmt.Errorf("Readdirnames returns -> %s", err)
 	}
-	// get full address
+	// get full directory of the file file.
 	for i := 0; i < len(m); i++ {
 		m[i] = filepath.Join(address, m[i])
 	}
@@ -166,17 +163,14 @@ func PullCategorized(root, ignore string, fl *[]File) error {
 	return nil
 }
 
-// PullOut will pull a file from source path and write it to destine path. Returns a written bytes and an error if any occurs. If a critical error occurs this function will execute a panic.
 func PullOut(dst, src string) (int64, error) {
 	buf := make([]byte, bufSize)
 	bw := int64(0)
 
-	// Open source file
 	fs, err := os.OpenFile(src, syscall.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return bw, err // Handle Error
+		return bw, err
 	}
-	// try to close fs
 	defer func() {
 		if err := fs.Close(); err != nil {
 			panic(err)
@@ -186,13 +180,11 @@ func PullOut(dst, src string) (int64, error) {
 	if err != nil {
 		return bw, err
 	}
-	// Get file size
 	chunckSize := stt.Size() / 1024
 
-	// Open destine file
 	fd, err := os.OpenFile(dst, syscall.O_CREAT|syscall.O_WRONLY, os.ModePerm)
 	if err != nil {
-		return bw, err // Handle Error
+		return bw, err
 	}
 	defer func() {
 		if err := fd.Close(); err != nil {
@@ -200,7 +192,6 @@ func PullOut(dst, src string) (int64, error) {
 		}
 	}()
 
-	// write fs to fd
 	for i := 0; i < int(chunckSize/4); i++ {
 		r, err := fs.Read(buf)
 		if err == io.EOF {
@@ -220,7 +211,6 @@ func PullOut(dst, src string) (int64, error) {
 
 func MoveFiles(dst, src string, p PullFiles) {
 	var fl []File
-	// Check source dir
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		if err = os.MkdirAll(dst, os.ModePerm); err != nil {
 			panic(err)
@@ -230,7 +220,6 @@ func MoveFiles(dst, src string, p PullFiles) {
 		panic(err)
 	}
 	for _, f := range fl {
-		// PullOut files
 		dst := filepath.Join(dst, f.Name)
 		log.Printf("Creating File: %s\n", f.Name)
 		bw, err := PullOut(dst, f.Path)
@@ -294,7 +283,6 @@ func Categorize(dst, src string, p PullFiles) {
 		if f.Season == "" { // Raising a flag
 			fp = filepath.Join(dst, f.Title, f.Name)
 		}
-		// Check source dir
 		if _, err := os.Stat(filepath.Dir(fp)); os.IsNotExist(err) {
 			if err = os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
 				panic(err)
