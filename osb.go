@@ -19,8 +19,6 @@ import (
 	"syscall"
 )
 
-// type mapLang map[string]bool
-
 type Controller struct {
 	RootFolder      string
 	DefaultLanguage string
@@ -210,7 +208,6 @@ func (c *Controller) downloadScanner(hash string) {
 }
 
 func DownloadHashed(c *Controller, hash string, size int64) {
-	// Check source dir
 	if _, err := os.Stat(c.RootFolder); os.IsNotExist(err) {
 		if err = os.MkdirAll(c.RootFolder, os.ModePerm); err != nil {
 			panic(err)
@@ -233,7 +230,6 @@ func DownloadHashed(c *Controller, hash string, size int64) {
 }
 
 func DownloadQuery(c *Controller, params url.Values) {
-	// Check source dir
 	if _, err := os.Stat(c.RootFolder); os.IsNotExist(err) {
 		if err = os.MkdirAll(c.RootFolder, os.ModePerm); err != nil {
 			panic(err)
@@ -250,19 +246,18 @@ func DownloadQuery(c *Controller, params url.Values) {
 
 func GetHashFiles(c *Controller, path string, p PullFiles) {
 	var fl []File
-	exts = map[string]bool{".mp4": true, ".mkv": true, ".avi": true, ".wmv": true}
 	if err := p(path, "", &fl); err != nil {
 		panic(err)
 	}
 	for _, f := range fl {
 		file, err := os.Open(filepath.Join(f.Path))
 		if err != nil {
-			log.Println("Could not open file %s: %s\n", f.Name, err.Error())
+			log.Printf("Could not open file %s: %s\n", f.Name, err.Error())
 			continue
 		}
 		hash, size, err := hashFile(file)
 		if err != nil {
-			log.Println("Could not hash file %s: %s\n", f.Name, err.Error())
+			log.Printf("Could not hash file %s: %s\n", f.Name, err.Error())
 			continue
 		}
 		if c.ScanFolder {
@@ -308,7 +303,7 @@ func hashFile(file *os.File) (hash string, size int64, err error) {
 	return fmt.Sprintf("%x", h+uint64(fi.Size())), fi.Size(), nil
 }
 
-// Read a chunk of a file at `offset` so as to fill `buf`.
+// Read a chunk of a file at offset so as to fill buf.
 func readChunk(file *os.File, offset int64, buf []byte) (err error) {
 	n, err := file.ReadAt(buf, offset)
 	if err != nil {
