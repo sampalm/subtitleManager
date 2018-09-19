@@ -9,14 +9,6 @@ import (
 	"strings"
 )
 
-func MapString(value string) map[string]bool {
-	ml := map[string]bool{}
-	for _, str := range strings.Split(strings.TrimSpace(value), ",") {
-		ml[str] = true
-	}
-	return ml
-}
-
 func main() {
 
 	// Check that the subcommand has been provided.
@@ -46,12 +38,11 @@ func main() {
 		}
 
 	case "query", "q":
-		if err := download(os.Args[2:]); err != nil {
+		if err := query(os.Args[2:]); err != nil {
 			log.Fatalln(err)
 		}
 
 	case "help", "h":
-		// Clear help command
 		fmt.Println("Help command choosed.")
 		fmt.Printf("\n[subtitleManager command subcommands...]\n\n*** Commands:\n\tcopy, c\n\tdelete, dl\n\tcategorize, ct\n\tdownload, d\n\tquery, q\n*** Subcomands:\nUse [subtitleManager command] to show all subcommands from that command.")
 		os.Exit(0)
@@ -156,7 +147,8 @@ func download(arg []string) error {
 		RatingScore:     *downloadScore,
 	}
 	if *downloadMLang != "" {
-		c.MultiLanguage = MapString(*downloadMLang)
+		// Splits the user-defined values and returns a map. (eg -multi en,pt,fr)
+		c.MultiLanguage = langParse(*downloadMLang)
 	}
 	if *downloadScan {
 		c.ScanFolder = true
@@ -194,7 +186,8 @@ func query(arg []string) error {
 		RatingScore:     *queryScore,
 	}
 	if *queryMLang != "" {
-		c.MultiLanguage = MapString(*queryMLang)
+		// Splits the user-defined values and returns a map. (eg -multi en,pt,fr)
+		c.MultiLanguage = langParse(*queryMLang)
 	}
 	params := url.Values{}
 	params.Add("query", *queryName)
@@ -207,4 +200,12 @@ func query(arg []string) error {
 	DownloadQuery(c, params)
 
 	return nil
+}
+
+func langParse(value string) map[string]bool {
+	ml := map[string]bool{}
+	for _, str := range strings.Split(strings.TrimSpace(value), ",") {
+		ml[str] = true
+	}
+	return ml
 }
