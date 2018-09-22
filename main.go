@@ -10,8 +10,6 @@ import (
 )
 
 func main() {
-
-	// Check that the subcommand has been provided.
 	if len(os.Args) < 2 {
 		log.Fatalln("You must provide a command task.")
 	}
