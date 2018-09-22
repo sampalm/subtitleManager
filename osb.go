@@ -24,11 +24,10 @@ type Controller struct {
 	DefaultLanguage string
 	MultiLanguage   map[string]bool
 	RatingScore     int
-	Filter          bool
 	Subtitles       []Subtitle
 	ScanFolder      bool
 	QueueMax        int
-	*http.Client
+	sync.WaitGroup
 }
 
 type Subtitle struct {
@@ -44,9 +43,6 @@ type Encoder interface {
 }
 
 const chunkSize = 65536
-
-var client = &http.Client{}
-var wg sync.WaitGroup
 
 func encodeOSB(e Encoder) string {
 	es := e.Encode()
@@ -66,9 +62,10 @@ func (c *Controller) osbRequest(method string, params url.Values) error {
 	req.Header.Set("User-Agent", "TemporaryUserAgent")
 	req.Header.Set("Content-Type", "application/json")
 
-	res, err := client.Do(req)
+	cl := &http.Client{}
+	res, err := cl.Do(req)
 	if err != nil {
-		panic(err) // FATAL ERROR - TRY TO RECOVER ?
+		panic(err) // raising a flag
 	}
 	defer res.Body.Close()
 
@@ -167,8 +164,8 @@ func (c *Controller) downloadFilter() {
 			continue
 		}
 		go func(s Subtitle) {
-			wg.Add(1)
-			defer wg.Done()
+			c.Add(1)
+			defer c.Done()
 			fmt.Printf("Starting to download %s...\n-> ", s.FileName)
 			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
 				fmt.Printf("Error while downloading: %s\n-> ", gerr.Error())
@@ -190,10 +187,10 @@ func (c *Controller) downloadScanner(hash string) {
 		queue = len(c.Subtitles)
 	}
 	log.Printf("Subtitles Found: %d\tIn Queue: %d\n", len(c.Subtitles), queue)
-	wg.Add(queue)
+	c.Add(queue)
 	for n < queue {
 		go func(s Subtitle) {
-			defer wg.Done()
+			defer c.Done()
 			log.Printf("Starting to download %s...\n-> ", s.FileName)
 			if gerr := c.download(s.DownloadLink, s.FileName); gerr != nil {
 				log.Printf("Error while downloading: %s\n-> ", gerr.Error())
@@ -203,7 +200,7 @@ func (c *Controller) downloadScanner(hash string) {
 		}(c.Subtitles[n])
 		n++
 	}
-	wg.Wait()
+	c.Wait()
 	fmt.Println("Everything worked out... cya ;)")
 }
 
@@ -225,7 +222,7 @@ func DownloadHashed(c *Controller, hash string, size int64) {
 		return
 	}
 	c.downloadFilter()
-	wg.Wait()
+	c.Wait()
 	fmt.Println("Everything worked out... cya ;)")
 }
 
@@ -240,7 +237,7 @@ func DownloadQuery(c *Controller, params url.Values) {
 		panic(err) // raising a flag
 	}
 	c.downloadFilter()
-	wg.Wait()
+	c.Wait()
 	fmt.Println("Everything worked out... cya ;)")
 }
 
@@ -303,7 +300,6 @@ func hashFile(file *os.File) (hash string, size int64, err error) {
 	return fmt.Sprintf("%x", h+uint64(fi.Size())), fi.Size(), nil
 }
 
-// Read a chunk of a file at offset so as to fill buf.
 func readChunk(file *os.File, offset int64, buf []byte) (err error) {
 	n, err := file.ReadAt(buf, offset)
 	if err != nil {
