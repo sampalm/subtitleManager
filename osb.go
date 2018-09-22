@@ -241,7 +241,7 @@ func DownloadQuery(c *Controller, params url.Values) {
 	fmt.Println("Everything worked out... cya ;)")
 }
 
-func GetHashFiles(c *Controller, path string, p PullFiles) {
+func GetHashFiles(c *Controller, path string, p Puller) {
 	var fl []File
 	if err := p(path, "", &fl); err != nil {
 		panic(err)
