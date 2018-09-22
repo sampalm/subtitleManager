@@ -26,7 +26,7 @@ type Info struct {
 	Season string
 }
 
-type PullFiles func(root, ignore string, fl *[]File) error
+type Puller func(root, ignore string, fl *[]File) error
 
 func crawler(ignore string, fl *[]File) filepath.WalkFunc {
 	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
@@ -121,7 +121,14 @@ func pullFiles(folder []string, fl *[]File) error {
 			Path: folder[i],
 			Ext:  filepath.Ext(d.Name()),
 		}
-		regexSplit(f.Name, &f.Info)
+
+		s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(f.Name)
+		f.Title = strings.TrimSpace(strings.Replace(strings.Split(f.Name, s)[0], ".", " ", -1))
+		ss := regexp.MustCompile(`([.][a-zA-Z]([0-9]{2}))`).FindStringSubmatch(s)
+		if ss != nil {
+			f.Season = "Season " + ss[2]
+		}
+
 		*fl = append(*fl, f)
 	}
 	return nil
@@ -144,15 +151,6 @@ func globDir(address string) ([]string, error) {
 	}
 	sort.Strings(m)
 	return m, nil
-}
-
-func regexSplit(filename string, info *Info) {
-	s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(filename)
-	info.Title = strings.TrimSpace(strings.Replace(strings.Split(filename, s)[0], ".", " ", -1))
-	ss := regexp.MustCompile(`([.][a-zA-Z]([0-9]{2}))`).FindStringSubmatch(s)
-	if ss != nil {
-		info.Season = "Season " + ss[2]
-	}
 }
 
 func PullCategorized(root, ignore string, fl *[]File) error {
@@ -209,7 +207,7 @@ func PullOut(dst, src string) (int64, error) {
 	return bw, nil
 }
 
-func MoveFiles(dst, src string, p PullFiles) {
+func MoveFiles(dst, src string, p Puller) {
 	var fl []File
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		if err = os.MkdirAll(dst, os.ModePerm); err != nil {
@@ -246,6 +244,7 @@ func remove(fl []File) error {
 }
 
 func deleteFile(path string, stack map[string]bool) error {
+	fmt.Println("deleteFile reached....")
 	if _, ok := stack[filepath.Dir(path)]; !ok {
 		stack[filepath.Dir(path)] = true
 		log.Printf("Cleaning %s folder.\n", filepath.Dir(path))
@@ -256,7 +255,7 @@ func deleteFile(path string, stack map[string]bool) error {
 	return nil
 }
 
-func DeleteFolder(path, ignore string, p PullFiles) {
+func DeleteFolder(path, ignore string, p Puller) {
 	var fl []File
 	if err := p(path, ignore, &fl); err != nil {
 		panic(err)
@@ -269,8 +268,7 @@ func DeleteFolder(path, ignore string, p PullFiles) {
 	}
 }
 
-func Categorize(dst, src string, p PullFiles) {
-	var dl map[string]bool
+func Categorize(dst, src string, p Puller) {
 	var fl []File
 	if dst == "" {
 		dst = src
@@ -295,6 +293,7 @@ func Categorize(dst, src string, p PullFiles) {
 			return
 		}
 		log.Println("File created, bytes written: ", bw)
+		dl := map[string]bool{}
 		if err := deleteFile(f.Path, dl); err != nil {
 			log.Println("deleteFile => ", err)
 			return
