@@ -14,8 +14,6 @@ import (
 
 const bufSize = 4 * 1024 * 1024
 
-var exts = map[string]bool{".srt": true, ".sub": true, ".sbv": true}
-
 type File struct {
 	Name string
 	Path string
@@ -31,6 +29,7 @@ type Info struct {
 type PullFiles func(root, ignore string, fl *[]File) error
 
 func crawler(ignore string, fl *[]File) filepath.WalkFunc {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -42,7 +41,6 @@ func crawler(ignore string, fl *[]File) filepath.WalkFunc {
 			}
 			return nil
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(path)]; !ok {
 			return nil
 		}
@@ -65,12 +63,13 @@ func PullTreeDir(root, ignore string, fl *[]File) error {
 }
 
 func PullDir(root, ignore string, fl *[]File) error {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	f, err := os.Open(root)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// get all files from dir
+	// read all the files from dir
 	m, err := f.Readdirnames(-1)
 	f.Close()
 	if err != nil {
@@ -83,11 +82,9 @@ func PullDir(root, ignore string, fl *[]File) error {
 		if err != nil {
 			return err
 		}
-		// Trying to copy all files to nowhere ?
 		if filepath.Dir(p) == ignore {
 			continue
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(p)]; !ok {
 			continue
 		}
@@ -99,13 +96,13 @@ func PullDir(root, ignore string, fl *[]File) error {
 		*fl = append(*fl, f)
 	}
 	if len(*fl) == 0 {
-		fmt.Println("None files found!")
-		os.Exit(0)
+		log.Fatalln("None files found!")
 	}
 	return nil
 }
 
-func pullPath(folder []string, fl *[]File) error {
+func pullFiles(folder []string, fl *[]File) error {
+	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	for i := range folder {
 		d, err := os.Lstat(folder[i])
 		if err != nil {
@@ -113,10 +110,9 @@ func pullPath(folder []string, fl *[]File) error {
 		}
 		if d.IsDir() {
 			path, _ := globDir(folder[i])
-			pullPath(path, fl)
+			pullFiles(path, fl)
 			continue
 		}
-		// Check for valid extensions
 		if _, ok := exts[filepath.Ext(d.Name())]; !ok {
 			continue
 		}
@@ -136,13 +132,13 @@ func globDir(address string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Open returns -> %s", err)
 	}
-	// get all files from dir
+	// read all the files from dir.
 	m, err := f.Readdirnames(-1)
 	f.Close()
 	if err != nil {
 		return nil, fmt.Errorf("Readdirnames returns -> %s", err)
 	}
-	// get full address
+	// get full directory of the file file.
 	for i := 0; i < len(m); i++ {
 		m[i] = filepath.Join(address, m[i])
 	}
@@ -150,7 +146,7 @@ func globDir(address string) ([]string, error) {
 	return m, nil
 }
 
-func regexSplit(filename string, info *Info) { // Raising a flag
+func regexSplit(filename string, info *Info) {
 	s := regexp.MustCompile(`(.[0-9]{4,}.([a-z-A-Z]|).*|(.[a-zA-Z]([0-9]+)){2,})`).FindString(filename)
 	info.Title = strings.TrimSpace(strings.Replace(strings.Split(filename, s)[0], ".", " ", -1))
 	ss := regexp.MustCompile(`([.][a-zA-Z]([0-9]{2}))`).FindStringSubmatch(s)
@@ -161,23 +157,20 @@ func regexSplit(filename string, info *Info) { // Raising a flag
 
 func PullCategorized(root, ignore string, fl *[]File) error {
 	m, _ := globDir(root)
-	if err := pullPath(m, fl); err != nil {
+	if err := pullFiles(m, fl); err != nil {
 		return err
 	}
 	return nil
 }
 
-// PullOut will pull a file from source path and write it to destine path. Returns a written bytes and an error if any occurs. If a critical error occurs this function will execute a panic.
 func PullOut(dst, src string) (int64, error) {
 	buf := make([]byte, bufSize)
 	bw := int64(0)
 
-	// Open source file
 	fs, err := os.OpenFile(src, syscall.O_RDONLY, os.ModePerm)
 	if err != nil {
-		return bw, err // Handle Error
+		return bw, err
 	}
-	// try to close fs
 	defer func() {
 		if err := fs.Close(); err != nil {
 			panic(err)
@@ -187,13 +180,11 @@ func PullOut(dst, src string) (int64, error) {
 	if err != nil {
 		return bw, err
 	}
-	// Get file size
 	chunckSize := stt.Size() / 1024
 
-	// Open destine file
 	fd, err := os.OpenFile(dst, syscall.O_CREAT|syscall.O_WRONLY, os.ModePerm)
 	if err != nil {
-		return bw, err // Handle Error
+		return bw, err
 	}
 	defer func() {
 		if err := fd.Close(); err != nil {
@@ -201,7 +192,6 @@ func PullOut(dst, src string) (int64, error) {
 		}
 	}()
 
-	// write fs to fd
 	for i := 0; i < int(chunckSize/4); i++ {
 		r, err := fs.Read(buf)
 		if err == io.EOF {
@@ -221,7 +211,6 @@ func PullOut(dst, src string) (int64, error) {
 
 func MoveFiles(dst, src string, p PullFiles) {
 	var fl []File
-	// Check source dir
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		if err = os.MkdirAll(dst, os.ModePerm); err != nil {
 			panic(err)
@@ -231,24 +220,23 @@ func MoveFiles(dst, src string, p PullFiles) {
 		panic(err)
 	}
 	for _, f := range fl {
-		// PullOut files
 		dst := filepath.Join(dst, f.Name)
-		fmt.Printf("Creating File: %s\n", f.Name)
+		log.Printf("Creating File: %s\n", f.Name)
 		bw, err := PullOut(dst, f.Path)
 		if err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("MovileFiles => ", err)
 			return
 		}
-		fmt.Println("File created, bytes written: ", bw)
+		log.Println("File created, bytes written: ", bw)
 	}
 }
 
-func delete(fl []File) error {
-	dl := map[string]bool{}
+func remove(fl []File) error {
+	var dl map[string]bool
 	for i := range fl {
 		if _, ok := dl[filepath.Dir(fl[i].Path)]; !ok {
 			dl[filepath.Dir(fl[i].Path)] = true
-			fmt.Printf("Folder %s cleaned.\n", filepath.Dir(fl[i].Path))
+			log.Printf("Folder %s has been cleaned.\n", filepath.Dir(fl[i].Path))
 		}
 		if err := os.RemoveAll(fl[i].Path); err != nil {
 			return err
@@ -257,10 +245,10 @@ func delete(fl []File) error {
 	return nil
 }
 
-func deleteFile(path string, log map[string]bool) error {
-	if _, ok := log[filepath.Dir(path)]; !ok {
-		log[filepath.Dir(path)] = true
-		fmt.Printf("Cleaning %s folder.\n", filepath.Dir(path))
+func deleteFile(path string, stack map[string]bool) error {
+	if _, ok := stack[filepath.Dir(path)]; !ok {
+		stack[filepath.Dir(path)] = true
+		log.Printf("Cleaning %s folder.\n", filepath.Dir(path))
 	}
 	if err := os.Remove(path); err != nil {
 		return err
@@ -276,13 +264,13 @@ func DeleteFolder(path, ignore string, p PullFiles) {
 	if len(fl) == 0 {
 		return
 	}
-	if cerr := delete(fl); cerr != nil {
+	if cerr := remove(fl); cerr != nil {
 		panic(cerr) // raising a flag
 	}
 }
 
 func Categorize(dst, src string, p PullFiles) {
-	dl := map[string]bool{}
+	var dl map[string]bool
 	var fl []File
 	if dst == "" {
 		dst = src
@@ -292,24 +280,23 @@ func Categorize(dst, src string, p PullFiles) {
 	}
 	for _, f := range fl {
 		fp := filepath.Join(dst, f.Title, f.Season, f.Name)
-		if f.Season == "" { // Raising a flag
+		if f.Season == "" {
 			fp = filepath.Join(dst, f.Title, f.Name)
 		}
-		// Check source dir
 		if _, err := os.Stat(filepath.Dir(fp)); os.IsNotExist(err) {
 			if err = os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
 				panic(err)
 			}
 		}
-		fmt.Printf("Creating File: %s\n", fp)
+		log.Printf("Creating File: %s\n", fp)
 		bw, err := PullOut(fp, f.Path)
 		if err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("PullOut => ", err)
 			return
 		}
-		fmt.Println("File created, bytes written: ", bw)
+		log.Println("File created, bytes written: ", bw)
 		if err := deleteFile(f.Path, dl); err != nil {
-			fmt.Println("Error occurs: ", err)
+			log.Println("deleteFile => ", err)
 			return
 		}
 	}
