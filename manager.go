@@ -26,10 +26,11 @@ type Info struct {
 	Season string
 }
 
+var exts = map[string]bool{".srt": true, ".sub": true, ".sbv": true}
+
 type Puller func(root, ignore string, fl *[]File) error
 
 func crawler(ignore string, fl *[]File) filepath.WalkFunc {
-	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -54,6 +55,11 @@ func crawler(ignore string, fl *[]File) filepath.WalkFunc {
 	}
 }
 
+func PullTreeDirMovies(root, ignore string, fl *[]File) error {
+	exts = map[string]bool{".mp4": true, ".mkv": true, ".avi": true}
+	return PullTreeDir(root, ignore, fl)
+}
+
 func PullTreeDir(root, ignore string, fl *[]File) error {
 	err := filepath.Walk(root, crawler(ignore, fl))
 	if err != nil {
@@ -62,8 +68,12 @@ func PullTreeDir(root, ignore string, fl *[]File) error {
 	return nil
 }
 
+func PullDirMovies(root, ignore string, fl *[]File) error {
+	exts = map[string]bool{".mp4": true, ".mkv": true, ".avi": true}
+	return PullDir(root, ignore, fl)
+}
+
 func PullDir(root, ignore string, fl *[]File) error {
-	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	ignore = filepath.Join(ignore)
 	f, err := os.Open(root)
 	if err != nil {
@@ -102,7 +112,6 @@ func PullDir(root, ignore string, fl *[]File) error {
 }
 
 func pullFiles(folder []string, fl *[]File) error {
-	exts := map[string]bool{".srt": true, ".sub": true, ".sbv": true}
 	for i := range folder {
 		d, err := os.Lstat(folder[i])
 		if err != nil {

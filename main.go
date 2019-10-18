@@ -151,10 +151,10 @@ func download(arg []string) error {
 	if *downloadScan {
 		c.ScanFolder = true
 		c.QueueMax = *downloadMaxQueue
-		GetHashFiles(c, *downloadPath, PullTreeDir)
+		GetHashFiles(c, *downloadPath, PullTreeDirMovies)
 		return nil
 	}
-	GetHashFiles(c, *downloadPath, PullDir)
+	GetHashFiles(c, *downloadPath, PullDirMovies)
 
 	return nil
 }
