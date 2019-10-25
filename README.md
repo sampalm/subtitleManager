@@ -1,8 +1,8 @@
 # Subtitle Manager
 
-Subtitle Manager is an application to manage movie captions, series, animes, etc more efficiently. You can also download the captions directly to the application and organize them by categories.
+Manage your movie captions, series, animes in an easier way. You can also download the captions directly from the application and organize them.
 
-The application is still in the testing version and also does not have all of your functions. This is a project for learning purposes only, I don't have the goal of turning it into something beyond that.
+The application is still in development but I'm always looking to update it when its possible or I'm disposal to. This is a project for learning purposes only.
 
 I appreciate any suggestions or tips to improve application performance or improve the code itself.
 
@@ -14,7 +14,7 @@ go get github.com/sampalm/subtitleManager
 
 ## How to use
 
-To use the application you must use flags to define directories and different functions of the application. For more information use `-help` tag to see a set of instructions explaining the main functions of the application and of each flag or option. You can also combine different flags and options to make multiples task at once, but there are an rank of priority which application uses to execute it fuction, see more information below.
+To make use you must choose a flag to define directories and different functions. For more information use `-help` tag to see a set of instructions explaining the main commands available and its own sub-commands. Each command has a set of subcommands as you can see below:
 
 ### Usage:
 `subtitlemanager command -subcommands...`
@@ -34,24 +34,20 @@ To use the application you must use flags to define directories and different fu
 * -dst `Set path to where your files will be moved and categorized.`
 
 #### Download Subcommands
-* -path `Defines the path where your files are.`
-* -score `Defines the minimum rating.`
-* -lang `Defines the language. (Default: 'eng')`
+* -path `Set the path where to put the downloaded files.`
+* -score `Set the minimum rating.`
+* -lang `Set the language. (Default: 'eng')`
     - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
-* -multi `Defines multiple languages.`
-* -scan `It scans the folder and download the subtitles of all the files that it finds.`
-* -max `Sets the maximum download queue.`
+* -multi `Set multiple languages separate by comma.`
+* -scan `It scans the folder and download the subtitles of all the files that scan finds.`
 
 #### Query Subcommands
-* -path `Defines the path to save all downloaded subtitles.`
-* -name `Defines query's name.`
-* -season `Defines query's season.`
-* -episode `Defines query's episode.`
-* -score `Defines a minimum rating.`
+* -path `Set the path to save all downloaded subtitles.`
+* -name `Set query's name.`
+* -season `Set query's season.`
+* -episode `Set query's episode.`
+* -score `Set a minimum rating.`
 * -lang `Defines the language. (Default: 'eng')`
     - You can see others language [ISO 639-2 Code](http://www.loc.gov/standards/iso639-2/php/code_list.php).
 * -multi `Defines multiple languages.`
 
-### Additional:
-If any problems occur, or you have any suggestions please send me an email: samuelpalmeira@outlook.com
-	
